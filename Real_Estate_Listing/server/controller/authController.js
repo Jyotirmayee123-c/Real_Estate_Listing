@@ -96,9 +96,23 @@ const getMe = async (req, res) => {
   }
 };
 
+const getAllUsers = async (req, res) => {
+  try {
+
+    const users = await User.find({role:"user"}).select("-password").sort({ createdAt: -1 });
+    res.status(200).json({
+      success: true,
+      data: users
+    });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+}
+
 module.exports = {
   registerUser,
   loginUser,
   logoutUser,
   getMe,
+  getAllUsers
 };

@@ -1,6 +1,7 @@
 
 import React, { useState } from "react";
 import { motion } from "framer-motion";
+import api from "../../services/api";
 
 export default function ContactForm() {
   const [formData, setFormData] = useState({
@@ -22,10 +23,42 @@ export default function ContactForm() {
     });
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    console.log("Form submitted:", formData);
-    // Add your form submission logic here
+
+    try {
+      const res = await api.post("/contact", {
+        fullName: formData.fullName,
+        email: formData.email,
+        phone: formData.phone,
+        whatsApp: formData.whatsapp,
+        lookingTo: formData.lookingTo,
+        propertyType: formData.propertyType,
+        bestTimeToContact: formData.bestTime,
+        preferredContactMethod: formData.contactMethod,
+        description: formData.description,
+      });
+
+      if (res.status === 201 || res.status === 200) {
+        alert("Message sent successfully ✅");
+
+        // Optional: Reset form
+        setFormData({
+          fullName: "",
+          email: "",
+          phone: "",
+          whatsapp: "",
+          lookingTo: "",
+          propertyType: "",
+          bestTime: "",
+          contactMethod: "",
+          description: "",
+        });
+      }
+
+    } catch (error: any) {
+      alert(error.response?.data?.message || "Something went wrong ❌");
+    }
   };
 
   return (
@@ -151,7 +184,7 @@ export default function ContactForm() {
                   <option value="">Select property type</option>
                   <option value="apartment">Apartment</option>
                   <option value="house">House</option>
-                  <option value="villa">Villa</option>
+                  <option value="land">Villa</option>
                   <option value="commercial">Commercial</option>
                 </select>
               </div>
@@ -186,8 +219,8 @@ export default function ContactForm() {
                   className="w-full px-4 py-3 xs:py-3.5 rounded-lg bg-[#1a1a2e] border border-purple-900/30 text-white focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 outline-none transition text-sm xs:text-base cursor-pointer"
                 >
                   <option value="">Select method</option>
-                  <option value="phone">Phone Call</option>
-                  <option value="whatsapp">WhatsApp</option>
+                  <option value="call">Phone Call</option>
+                  <option value="whatsApp">WhatsApp</option>
                   <option value="email">Email</option>
                 </select>
               </div>

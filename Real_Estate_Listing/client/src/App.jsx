@@ -18,11 +18,12 @@ import ProtectedRoute from './route/ProtectedRoute';
 import PublicRoute from './route/PublicRoute';
 import Services from './pages/public/Services';
 import Contacts from './pages/public/Contacts';
-import Buy from './pages/public/Buy';
-import Rent from './pages/public/Rent';
-
 import AdminContact from './pages/admin/AdminContact';
-import Sell from './pages/public/Sell';
+import AdminProperty from './pages/admin/AdminProperty';
+import Properties from './pages/public/Properties';
+import PropertyDetails from './pages/public/PropertyDetails';
+import AdminEnquiry from './pages/admin/AdminEnquiry';
+import AdminUsers from './pages/admin/AdminUsers';
 
 function App() {
   return (
@@ -34,9 +35,8 @@ function App() {
         <Route path="about" element={<About />} />
         <Route path="services" element={<Services />} />
         <Route path="contacts" element={<Contacts />} />
-        <Route path="buy" element={<Buy />} />
-        <Route path="rent" element={<Rent />} />
-        <Route path="sell" element={<Sell />} />
+        <Route path="properties" element={<Properties />} />
+        <Route path="property/:id" element={<PropertyDetails />} />
         
         {/* Only accessible if NOT logged in */}
         <Route 
@@ -70,7 +70,10 @@ function App() {
       {/* Admin Routes with Admin Layout */}
       <Route path="/admin" element={<AdminLayout />}>
         <Route index element={<AdminDashboard />} />
-        <Route index element={<AdminContact />} />
+        <Route path='users' element={<AdminUsers />} />
+        <Route path='contact' element={<AdminContact />} />
+        <Route path='property' element={<AdminProperty />} />
+        <Route path='enquiry' element={<AdminEnquiry />} />
       </Route>
       
       {/* Fallback */}
