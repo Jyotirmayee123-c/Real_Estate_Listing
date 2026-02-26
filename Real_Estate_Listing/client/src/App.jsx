@@ -20,8 +20,9 @@ import Services from './pages/public/Services';
 import Contacts from './pages/public/Contacts';
 import Buy from './pages/public/Buy';
 import Rent from './pages/public/Rent';
-import Cell from './pages/public/Cell';
+
 import AdminContact from './pages/admin/AdminContact';
+import Sell from './pages/public/Sell';
 
 function App() {
   return (
@@ -35,7 +36,7 @@ function App() {
         <Route path="contacts" element={<Contacts />} />
         <Route path="buy" element={<Buy />} />
         <Route path="rent" element={<Rent />} />
-        <Route path="cell" element={<Cell />} />
+        <Route path="sell" element={<Sell />} />
         
         {/* Only accessible if NOT logged in */}
         <Route 
