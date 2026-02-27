@@ -159,7 +159,9 @@ const CreatePropertyModal = ({ closeModal, editMode = false, propertyData }) => 
             <label className="block font-semibold mb-2">
               Thumbnail {editMode && "(Optional)"}
             </label>
-            <input type="file" accept="image/*" onChange={handleThumbnailChange} className="w-full border p-2 rounded-lg" />
+            {/* <input type="file" accept="image/*" onChange={handleThumbnailChange} className="w-full border p-2 rounded-lg" /> */}
+            <input type="text" name="thumbnail" placeholder="Image with Url" value={formData.thumbnail} onChange={handleChange}  required className="w-full border rounded-lg p-3" rows={4} />
+          
 
             {thumbnailPreview && (
               <img
