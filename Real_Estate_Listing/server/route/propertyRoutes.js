@@ -1,41 +1,23 @@
 const express = require("express");
 const {
-    createProperty,
-    getAllProperties,
-    getSingleProperty,
-    updateProperty,
-    deleteProperty,
+  createProperty,
+  getAllProperties,
+  getSingleProperty,
+  updateProperty,
+  deleteProperty,
 } = require("../controller/propertyController");
 
 const { protect, adminOnly } = require("../middleware/authMiddleware");
 
 const router = express.Router();
 
-const upload = require("../middleware/upload");
+// PUBLIC — anyone can view
+router.get("/", getAllProperties);
+router.get("/:id", getSingleProperty);
 
-router.post(
-    "/",
-    protect,
-    adminOnly,
-    upload.fields([
-        { name: "thumbnail", maxCount: 1 },
-        { name: "images", maxCount: 10 },
-    ]),
-    createProperty
-);
-
-router.put(
-    "/:id",
-    protect,
-    adminOnly,
-    upload.fields([
-        { name: "thumbnail", maxCount: 1 },
-        { name: "images", maxCount: 10 },
-    ]),
-    updateProperty
-);
-router.get("/", protect, adminOnly, getAllProperties);
-router.get("/:id", protect, adminOnly, getSingleProperty);
+// PROTECTED — admin only
+router.post("/", protect, adminOnly, createProperty);
+router.put("/:id", protect, adminOnly, updateProperty);
 router.delete("/:id", protect, adminOnly, deleteProperty);
 
 module.exports = router;

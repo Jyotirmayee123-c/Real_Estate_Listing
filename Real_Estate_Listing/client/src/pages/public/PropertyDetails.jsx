@@ -3,6 +3,8 @@ import { useParams, useNavigate } from "react-router-dom";
 import { MapPin, BedDouble, Bath, Ruler, Home, ArrowLeft } from "lucide-react";
 import api from "../../services/api";
 
+const BASE_URL = import.meta.env.VITE_API_BASE_URL;
+
 const PropertyDetails = () => {
     const { id } = useParams();
     const navigate = useNavigate();
@@ -21,12 +23,21 @@ const PropertyDetails = () => {
     const [submitting, setSubmitting] = useState(false);
     const [successMsg, setSuccessMsg] = useState("");
 
+    const getImageUrl = (path) => {
+        if (!path) return "";
+        if (path.startsWith("http")) return path;
+        return `${BASE_URL}/${path}`;
+    };
+
     const fetchProperty = async () => {
         try {
             const res = await api.get(`/property/${id}`);
             const data = res.data.property || res.data?.data;
             setProperty(data);
-            setSelectedImage(data.thumbnail);
+
+            if (data?.thumbnail) {
+                setSelectedImage(getImageUrl(data.thumbnail));
+            }
         } catch (error) {
             console.error("Error fetching property", error);
         } finally {
@@ -84,6 +95,11 @@ const PropertyDetails = () => {
         );
     }
 
+    const imageGallery = [
+        property.thumbnail,
+        ...(property.images || []),
+    ].filter(Boolean);
+
     return (
         <div className="min-h-screen bg-gray-50 py-10 px-5">
             <div className="max-w-7xl mx-auto grid lg:grid-cols-3 gap-10">
@@ -112,20 +128,23 @@ const PropertyDetails = () => {
                             />
 
                             <div className="flex gap-3 mt-4 flex-wrap">
-                                {[property.thumbnail, ...(property.images || [])].map(
-                                    (img, index) => (
+                            {imageGallery.map((img, index) => {
+                                    const fullUrl = getImageUrl(img);
+
+                                    return (
                                         <img
                                             key={index}
-                                            src={img}
+                                            src={fullUrl}
                                             alt="thumbnail"
-                                            onClick={() => setSelectedImage(img)}
-                                            className={`h-20 w-28 object-cover rounded-lg cursor-pointer border-2 ${selectedImage === img
+                                            onClick={() => setSelectedImage(fullUrl)}
+                                            className={`h-20 w-28 object-cover rounded-lg cursor-pointer border-2 ${
+                                                selectedImage === fullUrl
                                                     ? "border-purple-600"
-                                                    : "border-transparent"
+                                                    : "border-transparent"  
                                                 }`}
                                         />
                                     )
-                                )}
+                             } )}
                             </div>
                         </div>
 

@@ -1,20 +1,26 @@
-const { default: slugify } = require("slugify");
+const slugify = require("slugify"); // ← CommonJS require, NOT { default: slugify }
 const Property = require("../model/Property");
 
+// @desc    Create a property
+// @route   POST /api/property
+// @access  Private/Admin
 exports.createProperty = async (req, res) => {
   try {
     const { title } = req.body;
 
-    const slug = slugify(title, { lower: true });
+    if (!title) {
+      return res
+        .status(400)
+        .json({ success: false, message: "Title is required" });
+    }
 
-    // const thumbnail = req.files.thumbnail[0].path;
-    // const images = req.files.images.map((file) => file.path);
+    // Generate a unique slug (append timestamp to avoid duplicates)
+    const baseSlug = slugify(title, { lower: true, strict: true });
+    const slug = `${baseSlug}-${Date.now()}`;
 
     const property = await Property.create({
       ...req.body,
       slug,
-      // thumbnail,
-      // images,
     });
 
     res.status(201).json({
@@ -22,7 +28,6 @@ exports.createProperty = async (req, res) => {
       message: "Property created successfully",
       data: property,
     });
-
   } catch (error) {
     res.status(500).json({
       success: false,
@@ -32,6 +37,9 @@ exports.createProperty = async (req, res) => {
   }
 };
 
+// @desc    Update a property
+// @route   PUT /api/property/:id
+// @access  Private/Admin
 exports.updateProperty = async (req, res) => {
   try {
     const property = await Property.findById(req.params.id);
@@ -44,13 +52,14 @@ exports.updateProperty = async (req, res) => {
     }
 
     if (req.body.title) {
-      req.body.slug = slugify(req.body.title, { lower: true });
+      const baseSlug = slugify(req.body.title, { lower: true, strict: true });
+      req.body.slug = `${baseSlug}-${Date.now()}`;
     }
 
+    // Handle file uploads if present (Cloudinary flow)
     if (req.files?.thumbnail) {
       req.body.thumbnail = req.files.thumbnail[0].path;
     }
-
     if (req.files?.images) {
       req.body.images = req.files.images.map((file) => file.path);
     }
@@ -66,7 +75,6 @@ exports.updateProperty = async (req, res) => {
       message: "Property updated successfully",
       data: updatedProperty,
     });
-
   } catch (error) {
     res.status(500).json({
       success: false,
@@ -76,7 +84,9 @@ exports.updateProperty = async (req, res) => {
   }
 };
 
-// ✅ GET ALL PROPERTIES (Admin)
+// @desc    Get all properties
+// @route   GET /api/property
+// @access  Public
 exports.getAllProperties = async (req, res) => {
   try {
     const properties = await Property.find().sort({ createdAt: -1 });
@@ -84,7 +94,7 @@ exports.getAllProperties = async (req, res) => {
     res.status(200).json({
       success: true,
       count: properties.length,
-      data: properties,
+      data: properties, // AdminProperty.jsx uses res.data.data
     });
   } catch (error) {
     res.status(500).json({
@@ -95,8 +105,9 @@ exports.getAllProperties = async (req, res) => {
   }
 };
 
-
-// ✅ GET SINGLE PROPERTY
+// @desc    Get a single property
+// @route   GET /api/property/:id
+// @access  Public
 exports.getSingleProperty = async (req, res) => {
   try {
     const property = await Property.findById(req.params.id);
@@ -110,7 +121,7 @@ exports.getSingleProperty = async (req, res) => {
 
     res.status(200).json({
       success: true,
-      data: property,
+      property, // ← PropertyDetails.jsx reads: res.data.property || res.data?.data
     });
   } catch (error) {
     res.status(500).json({
@@ -121,7 +132,9 @@ exports.getSingleProperty = async (req, res) => {
   }
 };
 
-// ✅ DELETE PROPERTY (Admin)
+// @desc    Delete a property
+// @route   DELETE /api/property/:id
+// @access  Private/Admin
 exports.deleteProperty = async (req, res) => {
   try {
     const property = await Property.findByIdAndDelete(req.params.id);

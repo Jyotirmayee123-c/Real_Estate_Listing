@@ -5,12 +5,14 @@ import OurServices from "../../components/Home/OurServices"
 import WhyChooseUs from "../../components/Home/WhyChooseUs"
 
 const Home = () => {
+  
+
 
   return (
     <div className="">
-      <Banner />
+      <Banner  />
       <OurAchievement />
-      <OurServices />
+      <OurServices   />
       <WhyChooseUs />
     </div>
   );

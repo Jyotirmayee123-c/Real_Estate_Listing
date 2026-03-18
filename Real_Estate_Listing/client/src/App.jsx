@@ -11,7 +11,7 @@ import About from './pages/public/About';
 import Login from './pages/public/Login';
 import Register from './pages/public/Register';
 import Profile from './pages/user/Profile';
-import AdminDashboard from './pages/admin/AdminDashboard';
+import AdminDashboard from './pages/admin/AdminDashboard'; 
 
 // Route Guards
 import ProtectedRoute from './route/ProtectedRoute';
@@ -79,6 +79,8 @@ function App() {
       {/* Fallback */}
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
+
+
   );
 }
 

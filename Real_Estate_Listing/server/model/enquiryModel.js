@@ -1,4 +1,3 @@
-// models/enquiryModel.js
 const mongoose = require("mongoose");
 
 const enquirySchema = new mongoose.Schema(
@@ -12,6 +11,7 @@ const enquirySchema = new mongoose.Schema(
       type: String,
       required: true,
       lowercase: true,
+      trim: true,
     },
     phone: {
       type: String,
@@ -22,7 +22,7 @@ const enquirySchema = new mongoose.Schema(
       required: true,
     },
     property: {
-      type: mongoose.Schema.Types.ObjectId, 
+      type: mongoose.Schema.Types.ObjectId,
       ref: "Property",
       required: true,
     },
