@@ -5,6 +5,7 @@ import HowItWorks from '../../components/Service/HowItWorks'
 import MainServicesGrid from '../../components/Service/MainServiceGrid'
 import ServicePackages from '../../components/Service/ServicePackage'
 import WhyChooseOurServices from '../../components/Service/WhyChooseOurService'
+import Footer from '../../components/Footer'
 
 export default function Services() {
   return (
@@ -15,6 +16,7 @@ export default function Services() {
         <MainServicesGrid/>
         <ServicePackages/>
         <WhyChooseOurServices/>
+        <Footer/>
     </div>
   )
 }

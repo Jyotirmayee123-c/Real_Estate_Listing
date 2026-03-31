@@ -1,4 +1,4 @@
-const slugify = require("slugify"); // ← CommonJS require, NOT { default: slugify }
+const slugify = require("slugify");
 const Property = require("../model/Property");
 
 // @desc    Create a property
@@ -14,9 +14,17 @@ exports.createProperty = async (req, res) => {
         .json({ success: false, message: "Title is required" });
     }
 
-    // Generate a unique slug (append timestamp to avoid duplicates)
+    // Generate a unique slug
     const baseSlug = slugify(title, { lower: true, strict: true });
     const slug = `${baseSlug}-${Date.now()}`;
+
+    // ✅ FIX: Handle image uploads from req.files (Cloudinary/Multer)
+    if (req.files?.thumbnail) {
+      req.body.thumbnail = req.files.thumbnail[0].path;
+    }
+    if (req.files?.images) {
+      req.body.images = req.files.images.map((file) => file.path);
+    }
 
     const property = await Property.create({
       ...req.body,
@@ -56,7 +64,7 @@ exports.updateProperty = async (req, res) => {
       req.body.slug = `${baseSlug}-${Date.now()}`;
     }
 
-    // Handle file uploads if present (Cloudinary flow)
+    // ✅ Handle file uploads if present (Cloudinary flow)
     if (req.files?.thumbnail) {
       req.body.thumbnail = req.files.thumbnail[0].path;
     }
@@ -94,7 +102,7 @@ exports.getAllProperties = async (req, res) => {
     res.status(200).json({
       success: true,
       count: properties.length,
-      data: properties, // AdminProperty.jsx uses res.data.data
+      data: properties,
     });
   } catch (error) {
     res.status(500).json({
@@ -121,7 +129,7 @@ exports.getSingleProperty = async (req, res) => {
 
     res.status(200).json({
       success: true,
-      property, // ← PropertyDetails.jsx reads: res.data.property || res.data?.data
+      property,
     });
   } catch (error) {
     res.status(500).json({

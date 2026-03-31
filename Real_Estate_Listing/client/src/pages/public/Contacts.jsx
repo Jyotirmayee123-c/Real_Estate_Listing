@@ -4,7 +4,7 @@ import ContactForm from '../../components/Contact/ContactForm'
 import ContactFAQ from '../../components/Contact/ContactFAQ'
 import ContactInfo from '../../components/Contact/ContactInfo'
 import ContactMap from '../../components/Contact/ContactMap'
-
+import Footer from "../../components/Footer";
 export default function Contacts() {
   return (
     <div>
@@ -13,6 +13,7 @@ export default function Contacts() {
         <ContactFAQ/>
         <ContactInfo/>
         <ContactMap/>
+        <Footer/>
     </div>
   )
 }

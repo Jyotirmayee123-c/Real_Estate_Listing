@@ -1,21 +1,18 @@
-import { useAuth } from '../../context/AuthContext';
-import Banner from '../../components/Home/Banner'
-import OurAchievement from '../../components/Home/OurAchievement'
-import OurServices from "../../components/Home/OurServices"
-import WhyChooseUs from "../../components/Home/WhyChooseUs"
+import React from "react";
+import Banner from "../../components/Home/Banner";
+import OurServices from "../../components/Home/OurServices";
+import WhyChooseUs from "../../components/Home/WhyChooseUs";
+import OurAchievement from "../../components/Home/OurAchievement";
+import Footer from "../../components/Footer";
 
-const Home = () => {
-  
-
-
+export default function Home() {
   return (
-    <div className="">
-      <Banner  />
-      <OurAchievement />
-      <OurServices   />
+    <main className="bg-[#0d0d1a] min-h-screen">
+      <Banner />
+      <OurServices />
       <WhyChooseUs />
-    </div>
+      <OurAchievement />
+      <Footer />
+    </main>
   );
-};
-
-export default Home;
+}
