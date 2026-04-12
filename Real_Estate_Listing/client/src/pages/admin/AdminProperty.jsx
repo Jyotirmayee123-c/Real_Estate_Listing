@@ -17,16 +17,21 @@ const fmtPrice = (n) => {
   return "₹" + n?.toLocaleString();
 };
 
-const TYPES = ["All", "Apartment", "Villa", "Independent House", "Plot", "Commercial"];
+const TYPES = ["All", "Apartment", "House", "Commercial"];
+
+const TYPE_META = {
+  All:        { icon: "🏘️", color: "purple" },
+  Apartment:  { icon: "🏢", color: "blue"   },
+  House:      { icon: "🏠", color: "green"  },
+  Commercial: { icon: "🏬", color: "yellow" },
+  Other:      { icon: "🏗️", color: "pink"   },
+};
 
 // ── Skeleton Pulse ─────────────────────────────────────────────────────────────
 function SkeletonBox({ className }) {
-  return (
-    <div className={`rounded-xl bg-purple-900/20 animate-pulse ${className}`} />
-  );
+  return <div className={`rounded-xl bg-purple-900/20 animate-pulse ${className}`} />;
 }
 
-// ── Skeleton Mini Stat ─────────────────────────────────────────────────────────
 function SkeletonMiniStat() {
   return (
     <div className="flex items-center gap-3 border border-purple-900/20 rounded-2xl px-4 py-3 bg-purple-600/5">
@@ -39,18 +44,14 @@ function SkeletonMiniStat() {
   );
 }
 
-// ── Skeleton Property Grid Card ────────────────────────────────────────────────
 function SkeletonPropertyCard({ delay = 0 }) {
   return (
     <motion.div
       className="bg-[#252544] border border-purple-900/20 rounded-2xl overflow-hidden"
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
+      initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.35, delay }}
     >
-      {/* Image area */}
       <SkeletonBox className="h-44 w-full rounded-none" />
-      {/* Info */}
       <div className="p-4 space-y-3">
         <SkeletonBox className="h-4 w-3/4" />
         <SkeletonBox className="h-3 w-1/2" />
@@ -69,13 +70,11 @@ function SkeletonPropertyCard({ delay = 0 }) {
   );
 }
 
-// ── Skeleton Property List Row ─────────────────────────────────────────────────
 function SkeletonPropertyRow({ delay = 0 }) {
   return (
     <motion.div
       className="flex items-center gap-4 bg-[#252544] border border-purple-900/20 rounded-2xl p-4"
-      initial={{ opacity: 0, x: -10 }}
-      animate={{ opacity: 1, x: 0 }}
+      initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }}
       transition={{ duration: 0.3, delay }}
     >
       <SkeletonBox className="w-16 h-16 flex-shrink-0" />
@@ -120,16 +119,85 @@ function MiniStat({ icon, label, value, color }) {
   );
 }
 
+// ── Type Filter Pills ─────────────────────────────────────────────────────────
+function TypeFilterPills({ properties, typeFilter, setTypeFilter }) {
+  const colorMap = {
+    purple: {
+      active:   "bg-purple-600 border-purple-500 text-white shadow-lg shadow-purple-900/40",
+      inactive: "bg-purple-600/10 border-purple-900/30 text-purple-300 hover:border-purple-500/50 hover:bg-purple-600/20",
+      badgeOn:  "bg-white/20 text-white",
+      badgeOff: "bg-purple-900/50 text-purple-400",
+    },
+    blue: {
+      active:   "bg-blue-600 border-blue-500 text-white shadow-lg shadow-blue-900/40",
+      inactive: "bg-blue-600/10 border-blue-900/30 text-blue-300 hover:border-blue-500/50 hover:bg-blue-600/20",
+      badgeOn:  "bg-white/20 text-white",
+      badgeOff: "bg-blue-900/50 text-blue-400",
+    },
+    green: {
+      active:   "bg-emerald-600 border-emerald-500 text-white shadow-lg shadow-emerald-900/40",
+      inactive: "bg-emerald-600/10 border-emerald-900/30 text-emerald-300 hover:border-emerald-500/50 hover:bg-emerald-600/20",
+      badgeOn:  "bg-white/20 text-white",
+      badgeOff: "bg-emerald-900/50 text-emerald-400",
+    },
+    yellow: {
+      active:   "bg-yellow-500 border-yellow-400 text-white shadow-lg shadow-yellow-900/40",
+      inactive: "bg-yellow-500/10 border-yellow-900/30 text-yellow-300 hover:border-yellow-400/50 hover:bg-yellow-500/20",
+      badgeOn:  "bg-white/20 text-white",
+      badgeOff: "bg-yellow-900/50 text-yellow-400",
+    },
+    pink: {
+      active:   "bg-pink-600 border-pink-500 text-white shadow-lg shadow-pink-900/40",
+      inactive: "bg-pink-600/10 border-pink-900/30 text-pink-300 hover:border-pink-500/50 hover:bg-pink-600/20",
+      badgeOn:  "bg-white/20 text-white",
+      badgeOff: "bg-pink-900/50 text-pink-400",
+    },
+  };
+
+  return (
+    <div className="flex flex-wrap gap-2">
+      {TYPES.map((type) => {
+        const count =
+          type === "All"
+            ? properties.length
+            : properties.filter(
+                (p) => (p.propertyType || "").toLowerCase() === type.toLowerCase()
+              ).length;
+
+        const isActive = typeFilter === type;
+        const meta     = TYPE_META[type];
+        const colors   = colorMap[meta.color];
+
+        return (
+          <motion.button
+            key={type}
+            onClick={() => setTypeFilter(type)}
+            whileHover={{ scale: 1.04 }}
+            whileTap={{ scale: 0.96 }}
+            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold border transition-all duration-200
+              ${isActive ? colors.active : colors.inactive}`}
+          >
+            <span className="text-base leading-none">{meta.icon}</span>
+            <span>{type}</span>
+            <span className={`text-xs px-1.5 py-0.5 rounded-full font-bold transition-all
+              ${isActive ? colors.badgeOn : colors.badgeOff}`}>
+              {count}
+            </span>
+          </motion.button>
+        );
+      })}
+    </div>
+  );
+}
+
 // ── Property Grid Card ────────────────────────────────────────────────────────
 function PropertyCard({ property, onView, onEdit, onDelete, delay }) {
   return (
     <motion.div
       className="group bg-[#252544] border border-purple-900/30 hover:border-purple-500/50 rounded-2xl overflow-hidden transition-all duration-300 hover:-translate-y-1 hover:shadow-xl"
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
+      initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.35, delay }}
     >
-      {/* Image */}
       <div className="relative h-44 overflow-hidden">
         <img
           src={property.thumbnail}
@@ -138,25 +206,20 @@ function PropertyCard({ property, onView, onEdit, onDelete, delay }) {
           onError={e => { e.currentTarget.parentElement.innerHTML = `<div class="w-full h-full bg-purple-900/30 flex items-center justify-center"><span class="text-purple-400 text-4xl">🏠</span></div>`; }}
         />
         <div className="absolute inset-0 bg-gradient-to-t from-[#252544] via-transparent to-transparent" />
-        {/* Type badge */}
         <span className="absolute top-3 left-3 text-[11px] font-semibold px-2.5 py-1 rounded-full bg-purple-600/80 text-white backdrop-blur-sm">
           {property.propertyType || "Property"}
         </span>
-        {/* Price badge */}
         <span className="absolute bottom-3 right-3 text-sm font-black text-white bg-[#1a1a2e]/80 backdrop-blur-sm px-3 py-1 rounded-xl border border-purple-500/30">
           {fmtPrice(property.price)}
         </span>
       </div>
 
-      {/* Info */}
       <div className="p-4">
         <h3 className="text-white font-bold text-sm mb-1 truncate">{property.title}</h3>
         <div className="flex items-center gap-1 text-gray-400 text-xs mb-3">
           <MapPin size={11} className="text-purple-400 flex-shrink-0" />
           <span className="truncate">{property.city}{property.state ? `, ${property.state}` : ""}</span>
         </div>
-
-        {/* Meta row */}
         {(property.bedrooms || property.bathrooms || property.area) && (
           <div className="flex items-center gap-3 text-gray-500 text-xs mb-3 pb-3 border-b border-purple-900/20">
             {property.bedrooms  && <span>🛏 {property.bedrooms} Beds</span>}
@@ -164,25 +227,17 @@ function PropertyCard({ property, onView, onEdit, onDelete, delay }) {
             {property.area      && <span>📐 {property.area} sq.ft</span>}
           </div>
         )}
-
-        {/* Actions */}
         <div className="flex gap-2">
-          <button
-            onClick={() => onView(property)}
-            className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl bg-blue-600/20 hover:bg-blue-600/40 border border-blue-500/20 hover:border-blue-500/40 text-blue-400 text-xs font-semibold transition-all"
-          >
+          <button onClick={() => onView(property)}
+            className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl bg-blue-600/20 hover:bg-blue-600/40 border border-blue-500/20 hover:border-blue-500/40 text-blue-400 text-xs font-semibold transition-all">
             <Eye size={13} /> View
           </button>
-          <button
-            onClick={() => onEdit(property)}
-            className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl bg-emerald-600/20 hover:bg-emerald-600/40 border border-emerald-500/20 hover:border-emerald-500/40 text-emerald-400 text-xs font-semibold transition-all"
-          >
+          <button onClick={() => onEdit(property)}
+            className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl bg-emerald-600/20 hover:bg-emerald-600/40 border border-emerald-500/20 hover:border-emerald-500/40 text-emerald-400 text-xs font-semibold transition-all">
             <Pencil size={13} /> Edit
           </button>
-          <button
-            onClick={() => onDelete(property._id)}
-            className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl bg-red-600/20 hover:bg-red-600/40 border border-red-500/20 hover:border-red-500/40 text-red-400 text-xs font-semibold transition-all"
-          >
+          <button onClick={() => onDelete(property._id)}
+            className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl bg-red-600/20 hover:bg-red-600/40 border border-red-500/20 hover:border-red-500/40 text-red-400 text-xs font-semibold transition-all">
             <Trash2 size={13} /> Delete
           </button>
         </div>
@@ -196,17 +251,12 @@ function PropertyRow({ property, onView, onEdit, onDelete, delay }) {
   return (
     <motion.div
       className="group flex items-center gap-4 bg-[#252544] border border-purple-900/30 hover:border-purple-500/40 rounded-2xl p-4 transition-all duration-300 hover:shadow-lg"
-      initial={{ opacity: 0, x: -10 }}
-      animate={{ opacity: 1, x: 0 }}
+      initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }}
       transition={{ duration: 0.3, delay }}
     >
       <div className="w-16 h-16 rounded-xl overflow-hidden flex-shrink-0 bg-purple-900/30">
-        <img
-          src={property.thumbnail}
-          alt={property.title}
-          className="w-full h-full object-cover"
-          onError={e => { e.currentTarget.style.display = "none"; }}
-        />
+        <img src={property.thumbnail} alt={property.title} className="w-full h-full object-cover"
+          onError={e => { e.currentTarget.style.display = "none"; }} />
       </div>
       <div className="flex-1 min-w-0">
         <p className="text-white font-bold text-sm truncate">{property.title}</p>
@@ -225,8 +275,8 @@ function PropertyRow({ property, onView, onEdit, onDelete, delay }) {
         <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">Active</span>
       </div>
       <div className="flex items-center gap-2 flex-shrink-0">
-        <button onClick={() => onView(property)}  className="w-8 h-8 rounded-lg bg-blue-600/20 hover:bg-blue-600/40 border border-blue-500/20 flex items-center justify-center text-blue-400 transition-all"><Eye size={13} /></button>
-        <button onClick={() => onEdit(property)}  className="w-8 h-8 rounded-lg bg-emerald-600/20 hover:bg-emerald-600/40 border border-emerald-500/20 flex items-center justify-center text-emerald-400 transition-all"><Pencil size={13} /></button>
+        <button onClick={() => onView(property)}       className="w-8 h-8 rounded-lg bg-blue-600/20 hover:bg-blue-600/40 border border-blue-500/20 flex items-center justify-center text-blue-400 transition-all"><Eye size={13} /></button>
+        <button onClick={() => onEdit(property)}       className="w-8 h-8 rounded-lg bg-emerald-600/20 hover:bg-emerald-600/40 border border-emerald-500/20 flex items-center justify-center text-emerald-400 transition-all"><Pencil size={13} /></button>
         <button onClick={() => onDelete(property._id)} className="w-8 h-8 rounded-lg bg-red-600/20 hover:bg-red-600/40 border border-red-500/20 flex items-center justify-center text-red-400 transition-all"><Trash2 size={13} /></button>
       </div>
     </motion.div>
@@ -250,19 +300,19 @@ function Toast({ msg, type, onClose }) {
 
 // ── Main Component ────────────────────────────────────────────────────────────
 const AdminProperty = () => {
-  const [openModal,       setOpenModal]       = useState(false);
-  const [viewModal,       setViewModal]       = useState(false);
-  const [editMode,        setEditMode]        = useState(false);
-  const [selectedProp,    setSelectedProp]    = useState(null);
-  const [properties,      setProperties]      = useState([]);
-  const [filtered,        setFiltered]        = useState([]);
-  const [loading,         setLoading]         = useState(false);
-  const [refreshing,      setRefreshing]      = useState(false);
-  const [viewMode,        setViewMode]        = useState("grid"); // grid | list
-  const [search,          setSearch]          = useState("");
-  const [typeFilter,      setTypeFilter]      = useState("All");
-  const [sortBy,          setSortBy]          = useState("newest");
-  const [toast,           setToast]           = useState(null);
+  const [openModal,    setOpenModal]    = useState(false);
+  const [viewModal,    setViewModal]    = useState(false);
+  const [editMode,     setEditMode]     = useState(false);
+  const [selectedProp, setSelectedProp] = useState(null);
+  const [properties,   setProperties]   = useState([]);
+  const [filtered,     setFiltered]     = useState([]);
+  const [loading,      setLoading]      = useState(false);
+  const [refreshing,   setRefreshing]   = useState(false);
+  const [viewMode,     setViewMode]     = useState("grid");
+  const [search,       setSearch]       = useState("");
+  const [typeFilter,   setTypeFilter]   = useState("All");
+  const [sortBy,       setSortBy]       = useState("newest");
+  const [toast,        setToast]        = useState(null);
 
   // ── Fetch ──
   const fetchProperties = async (isRefresh = false) => {
@@ -284,12 +334,26 @@ const AdminProperty = () => {
   // ── Filter + Sort ──
   useEffect(() => {
     let result = [...properties];
-    if (search.trim())        result = result.filter(p => p.title?.toLowerCase().includes(search.toLowerCase()) || p.city?.toLowerCase().includes(search.toLowerCase()));
-    if (typeFilter !== "All") result = result.filter(p => p.propertyType === typeFilter);
-    if (sortBy === "newest")  result.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-    if (sortBy === "oldest")  result.sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
-    if (sortBy === "price-hi")result.sort((a, b) => (b.price || 0) - (a.price || 0));
-    if (sortBy === "price-lo")result.sort((a, b) => (a.price || 0) - (b.price || 0));
+
+    if (search.trim()) {
+      result = result.filter(
+        (p) =>
+          p.title?.toLowerCase().includes(search.toLowerCase()) ||
+          p.city?.toLowerCase().includes(search.toLowerCase())
+      );
+    }
+
+    if (typeFilter !== "All") {
+      result = result.filter(
+        (p) => (p.propertyType || "").toLowerCase() === typeFilter.toLowerCase()
+      );
+    }
+
+    if (sortBy === "newest")   result.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+    if (sortBy === "oldest")   result.sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
+    if (sortBy === "price-hi") result.sort((a, b) => (b.price || 0) - (a.price || 0));
+    if (sortBy === "price-lo") result.sort((a, b) => (a.price || 0) - (b.price || 0));
+
     setFiltered(result);
   }, [properties, search, typeFilter, sortBy]);
 
@@ -307,7 +371,10 @@ const AdminProperty = () => {
     }
   };
 
+  // ── View: open modal ──
   const handleView = (p) => { setSelectedProp(p); setViewModal(true); };
+
+  // ── Edit ──
   const handleEdit = (p) => { setSelectedProp(p); setEditMode(true); setOpenModal(true); };
 
   // ── Stats ──
@@ -318,8 +385,6 @@ const AdminProperty = () => {
   if (loading) return (
     <div className="min-h-screen bg-[#1a1a2e] px-4 sm:px-6 md:px-8 py-6 md:py-10">
       <div className="max-w-7xl mx-auto space-y-6">
-
-        {/* Header skeleton */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div className="space-y-2">
             <SkeletonBox className="h-3 w-24 rounded-full" />
@@ -331,13 +396,9 @@ const AdminProperty = () => {
             <SkeletonBox className="h-10 w-36 rounded-xl" />
           </div>
         </div>
-
-        {/* Mini stats skeleton */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
           {[...Array(4)].map((_, i) => <SkeletonMiniStat key={i} />)}
         </div>
-
-        {/* Search bar skeleton */}
         <div className="bg-[#252544] border border-purple-900/20 rounded-2xl p-4">
           <div className="flex flex-col sm:flex-row gap-3">
             <SkeletonBox className="h-10 flex-1 rounded-xl" />
@@ -346,14 +407,9 @@ const AdminProperty = () => {
             <SkeletonBox className="h-10 w-20 rounded-xl" />
           </div>
         </div>
-
-        {/* Property grid skeletons */}
         <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-5">
-          {[...Array(6)].map((_, i) => (
-            <SkeletonPropertyCard key={i} delay={i * 0.06} />
-          ))}
+          {[...Array(6)].map((_, i) => <SkeletonPropertyCard key={i} delay={i * 0.06} />)}
         </div>
-
       </div>
     </div>
   );
@@ -369,7 +425,9 @@ const AdminProperty = () => {
         >
           <div>
             <p className="text-purple-400 text-xs font-semibold uppercase tracking-widest mb-1">Admin Panel</p>
-            <h1 className="text-2xl sm:text-3xl font-black text-white">Property <span className="text-purple-500">Management</span></h1>
+            <h1 className="text-2xl sm:text-3xl font-black text-white">
+              Property <span className="text-purple-500">Management</span>
+            </h1>
             <p className="text-gray-500 text-xs mt-0.5">{properties.length} total properties listed</p>
           </div>
           <div className="flex items-center gap-3">
@@ -393,16 +451,27 @@ const AdminProperty = () => {
           className="grid grid-cols-2 sm:grid-cols-4 gap-4"
           initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4, delay: 0.1 }}
         >
-          <MiniStat icon={<Building2 size={16} />}   label="Total Properties" value={properties.length}      color="purple" />
-          <MiniStat icon={<CheckCircle size={16} />}  label="Active Listings"  value={properties.length}      color="green"  />
-          <MiniStat icon={<IndianRupee size={16} />}  label="Portfolio Value"  value={fmtPrice(totalRevenue)} color="blue"   />
-          <MiniStat icon={<Home size={16} />}         label="Property Types"   value={typeCount}              color="yellow" />
+          <MiniStat icon={<Building2 size={16} />}  label="Total Properties" value={properties.length}      color="purple" />
+          <MiniStat icon={<CheckCircle size={16} />} label="Active Listings"  value={properties.length}      color="green"  />
+          <MiniStat icon={<IndianRupee size={16} />} label="Portfolio Value"  value={fmtPrice(totalRevenue)} color="blue"   />
+          <MiniStat icon={<Home size={16} />}        label="Property Types"   value={typeCount}              color="yellow" />
         </motion.div>
 
-        {/* ── Search + Filters ── */}
+        {/* ── Type Filter Pills ── */}
+        <motion.div
+          initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4, delay: 0.15 }}
+        >
+          <TypeFilterPills
+            properties={properties}
+            typeFilter={typeFilter}
+            setTypeFilter={setTypeFilter}
+          />
+        </motion.div>
+
+        {/* ── Search + Sort + View Toggle ── */}
         <motion.div
           className="bg-[#252544] border border-purple-900/30 rounded-2xl p-4"
-          initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4, delay: 0.15 }}
+          initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4, delay: 0.2 }}
         >
           <div className="flex flex-col sm:flex-row gap-3">
             {/* Search */}
@@ -420,15 +489,6 @@ const AdminProperty = () => {
                 </button>
               )}
             </div>
-
-            {/* Type Filter */}
-            <select
-              className="bg-[#1a1a2e] border border-purple-900/30 focus:border-purple-500 text-gray-300 rounded-xl px-4 py-2.5 text-sm outline-none cursor-pointer transition-colors"
-              value={typeFilter}
-              onChange={e => setTypeFilter(e.target.value)}
-            >
-              {TYPES.map(t => <option key={t} value={t}>{t}</option>)}
-            </select>
 
             {/* Sort */}
             <select
@@ -459,21 +519,23 @@ const AdminProperty = () => {
             </div>
           </div>
 
-          {/* Active filters */}
+          {/* Active filters row */}
           {(search || typeFilter !== "All") && (
             <div className="flex items-center gap-2 mt-3 flex-wrap">
-              <span className="text-gray-500 text-xs">Filters:</span>
+              <span className="text-gray-500 text-xs">Active filters:</span>
               {search && (
                 <span className="flex items-center gap-1 text-xs px-2.5 py-1 rounded-full bg-purple-600/20 text-purple-400 border border-purple-500/20">
-                  "{search}" <button onClick={() => setSearch("")}><X size={10} /></button>
+                  "{search}"
+                  <button onClick={() => setSearch("")}><X size={10} /></button>
                 </span>
               )}
               {typeFilter !== "All" && (
                 <span className="flex items-center gap-1 text-xs px-2.5 py-1 rounded-full bg-purple-600/20 text-purple-400 border border-purple-500/20">
-                  {typeFilter} <button onClick={() => setTypeFilter("All")}><X size={10} /></button>
+                  {TYPE_META[typeFilter]?.icon} {typeFilter}
+                  <button onClick={() => setTypeFilter("All")}><X size={10} /></button>
                 </span>
               )}
-              <span className="text-gray-500 text-xs">{filtered.length} result{filtered.length !== 1 ? "s" : ""}</span>
+              <span className="text-gray-500 text-xs ml-1">{filtered.length} result{filtered.length !== 1 ? "s" : ""}</span>
             </div>
           )}
         </motion.div>
@@ -484,8 +546,10 @@ const AdminProperty = () => {
             className="bg-[#252544] border border-purple-900/30 rounded-2xl p-16 text-center"
             initial={{ opacity: 0 }} animate={{ opacity: 1 }}
           >
-            <div className="text-5xl mb-4">🏠</div>
-            <p className="text-white font-bold text-lg mb-2">No properties found</p>
+            <div className="text-5xl mb-4">{TYPE_META[typeFilter]?.icon || "🏠"}</div>
+            <p className="text-white font-bold text-lg mb-2">
+              No {typeFilter === "All" ? "" : typeFilter + " "}properties found
+            </p>
             <p className="text-gray-400 text-sm mb-6">
               {search || typeFilter !== "All" ? "Try adjusting your filters" : "Start by creating your first property"}
             </p>
@@ -501,27 +565,13 @@ const AdminProperty = () => {
         ) : viewMode === "grid" ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-5">
             {filtered.map((p, i) => (
-              <PropertyCard
-                key={p._id}
-                property={p}
-                onView={handleView}
-                onEdit={handleEdit}
-                onDelete={handleDelete}
-                delay={i * 0.05}
-              />
+              <PropertyCard key={p._id} property={p} onView={handleView} onEdit={handleEdit} onDelete={handleDelete} delay={i * 0.05} />
             ))}
           </div>
         ) : (
           <div className="space-y-3">
             {filtered.map((p, i) => (
-              <PropertyRow
-                key={p._id}
-                property={p}
-                onView={handleView}
-                onEdit={handleEdit}
-                onDelete={handleDelete}
-                delay={i * 0.04}
-              />
+              <PropertyRow key={p._id} property={p} onView={handleView} onEdit={handleEdit} onDelete={handleDelete} delay={i * 0.04} />
             ))}
           </div>
         )}
@@ -539,6 +589,7 @@ const AdminProperty = () => {
             <ViewPropertyModal
               property={selectedProp}
               closeModal={() => setViewModal(false)}
+              // {/* closeModal calls setViewModal(false) → unmounts modal → returns to this page */}
             />
           )}
         </AnimatePresence>

@@ -8,20 +8,37 @@ const quickInfo = [
   { icon: <Clock size={16} />, label: "Hours", value: "Mon–Sun: 9:30 AM – 7:30 PM", href: null },
 ];
 
+// ✅ Replace this URL with your own image path, e.g. "/images/contact-bg.jpg"
+const BG_IMAGE = "https://images.unsplash.com/photo-1512917774080-9991f1c4c750?w=1600&auto=format&fit=crop&q=80";
+
 export default function ContactHero() {
   return (
-    <section className="relative bg-gradient-to-b from-[#1a1a2e] to-[#252544] py-12 xs:py-16 sm:py-20 md:py-24 lg:py-28 px-4 sm:px-6 md:px-8 overflow-hidden">
-      {/* Grid bg */}
+    <section className="relative py-12 xs:py-16 sm:py-20 md:py-24 lg:py-28 px-4 sm:px-6 md:px-8 overflow-hidden">
+
+      {/* ── Background image layer ── */}
+      <div
+        className="absolute inset-0 bg-center bg-cover bg-no-repeat"
+        style={{ backgroundImage: `url('${BG_IMAGE}')` }}
+      />
+
+      {/* ── Dark gradient overlay so text stays readable ── */}
+      <div className="absolute inset-0 bg-gradient-to-r from-[#1a1a2e]/85 via-[#1a1a2e]/50 to-[#1a1a2e]/20" />
+
+      {/* ── Optional: subtle grid pattern on top of the image ── */}
       <div
         className="absolute inset-0 opacity-[0.03]"
         style={{
-          backgroundImage: "linear-gradient(rgba(168,85,247,1) 1px, transparent 1px), linear-gradient(90deg, rgba(168,85,247,1) 1px, transparent 1px)",
+          backgroundImage:
+            "linear-gradient(rgba(168,85,247,1) 1px, transparent 1px), linear-gradient(90deg, rgba(168,85,247,1) 1px, transparent 1px)",
           backgroundSize: "72px 72px",
         }}
       />
+
+      {/* ── Decorative accents ── */}
       <div className="absolute bottom-0 left-0 w-full h-px bg-gradient-to-r from-transparent via-purple-500/30 to-transparent" />
       <div className="absolute -right-32 top-0 w-96 h-full bg-gradient-to-bl from-purple-900/15 to-transparent pointer-events-none" />
 
+      {/* ── Content ── */}
       <div className="relative z-10 max-w-7xl mx-auto">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-20 items-center">
 
@@ -34,7 +51,9 @@ export default function ContactHero() {
               className="inline-flex items-center gap-2 bg-purple-600/20 border border-purple-900/30 rounded-full px-4 py-1.5 mb-6"
             >
               <span className="w-2 h-2 rounded-full bg-purple-500 animate-pulse" />
-              <span className="text-purple-400 text-xs sm:text-sm font-medium tracking-widest uppercase">We're Here to Help</span>
+              <span className="text-purple-400 text-xs sm:text-sm font-medium tracking-widest uppercase">
+                We're Here to Help
+              </span>
             </motion.div>
 
             <motion.h1
@@ -56,7 +75,8 @@ export default function ContactHero() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, delay: 0.2 }}
             >
-              Whether you're buying, renting, or selling — our team is ready to guide you every step of the way with zero pressure.
+              Whether you're buying, renting, or selling — our team is ready to guide you every step
+              of the way with zero pressure.
             </motion.p>
 
             <motion.a
@@ -80,7 +100,7 @@ export default function ContactHero() {
             {quickInfo.map((item, i) => (
               <motion.div
                 key={i}
-                className="bg-[#252544] border border-purple-900/30 hover:border-purple-500/50 rounded-2xl px-6 py-5 flex items-center gap-4 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-xl group"
+                className="bg-[#252544]/80 backdrop-blur-sm border border-purple-900/30 hover:border-purple-500/50 rounded-2xl px-6 py-5 flex items-center gap-4 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-xl group"
                 initial={{ opacity: 0, x: 30 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ duration: 0.4, delay: 0.3 + i * 0.08 }}
@@ -89,9 +109,14 @@ export default function ContactHero() {
                   {item.icon}
                 </div>
                 <div className="min-w-0">
-                  <p className="text-gray-500 text-xs font-semibold uppercase tracking-wider mb-0.5">{item.label}</p>
+                  <p className="text-gray-500 text-xs font-semibold uppercase tracking-wider mb-0.5">
+                    {item.label}
+                  </p>
                   {item.href ? (
-                    <a href={item.href} className="text-white font-semibold text-sm xs:text-base hover:text-purple-400 transition-colors truncate block">
+                    <a
+                      href={item.href}
+                      className="text-white font-semibold text-sm xs:text-base hover:text-purple-400 transition-colors truncate block"
+                    >
                       {item.value}
                     </a>
                   ) : (
@@ -106,7 +131,7 @@ export default function ContactHero() {
               href="https://maps.google.com"
               target="_blank"
               rel="noopener noreferrer"
-              className="bg-[#252544] border border-purple-900/30 hover:border-purple-500/50 rounded-2xl px-6 py-5 flex items-start gap-4 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-xl group"
+              className="bg-[#252544]/80 backdrop-blur-sm border border-purple-900/30 hover:border-purple-500/50 rounded-2xl px-6 py-5 flex items-start gap-4 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-xl group"
               initial={{ opacity: 0, x: 30 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ duration: 0.4, delay: 0.55 }}
@@ -115,9 +140,12 @@ export default function ContactHero() {
                 <MapPin size={16} />
               </div>
               <div>
-                <p className="text-gray-500 text-xs font-semibold uppercase tracking-wider mb-0.5">Address</p>
+                <p className="text-gray-500 text-xs font-semibold uppercase tracking-wider mb-0.5">
+                  Address
+                </p>
                 <p className="text-white font-semibold text-sm xs:text-base leading-snug">
-                  Azure Villa, Villa No-20, Ground Floor,<br />
+                  Azure Villa, Villa No-20, Ground Floor,
+                  <br />
                   Kalinga Nagar, Bhubaneswar – 751030
                 </p>
                 <p className="text-purple-400 text-xs mt-1.5 flex items-center gap-1">

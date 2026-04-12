@@ -1,18 +1,47 @@
 import React, { useState } from "react";
 import { Search } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import axios from "axios";
 
 export default function SearchBar() {
   const [location, setLocation] = useState("");
   const [category, setCategory] = useState("");
+  const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
-  const handleSearch = () => {
+  const handleSearch = async () => {
     if (!location && !category) {
       alert("Please enter a location or select a category");
       return;
     }
-    navigate(`/properties?location=${location}&category=${category}`);
+
+    try {
+      setLoading(true);
+
+      // Build query params
+      const params = new URLSearchParams();
+      if (location) params.append("location", location);
+      if (category) params.append("category", category);
+
+      // Fetch from backend to validate data exists
+      const response = await axios.get(
+        `${import.meta.env.VITE_API_URL}/api/properties?${params.toString()}`
+      );
+
+      if (response.data.length === 0) {
+        alert("No properties found for your search. Try different filters.");
+        return;
+      }
+
+      // Navigate to properties page with search params
+      navigate(`/properties?${params.toString()}`);
+
+    } catch (error) {
+      console.error("Search error:", error);
+      alert("Something went wrong. Please try again.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -50,9 +79,10 @@ export default function SearchBar() {
       {/* Search Button */}
       <button
         onClick={handleSearch}
-        className="bg-purple-600 hover:bg-purple-700 text-white px-7 py-2.5 rounded-full text-sm font-medium transition-colors duration-200 whitespace-nowrap w-full sm:w-auto"
+        disabled={loading}
+        className="bg-purple-600 hover:bg-purple-700 disabled:opacity-60 disabled:cursor-not-allowed text-white px-7 py-2.5 rounded-full text-sm font-medium transition-colors duration-200 whitespace-nowrap w-full sm:w-auto"
       >
-        Search
+        {loading ? "Searching..." : "Search"}
       </button>
     </div>
   );

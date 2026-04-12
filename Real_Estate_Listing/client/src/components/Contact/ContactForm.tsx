@@ -175,7 +175,7 @@ export default function ContactForm() {
                   name="fullName"
                   value={formData.fullName}
                   onChange={handleChange}
-                  placeholder="e.g. Suryakanta Das"
+                  placeholder="e.g. Jyotirmayee Panda"
                   required
                 />
               </Field>

@@ -1,5 +1,7 @@
+
 import './App.css'
-import { Routes, Route, Navigate } from 'react-router-dom';
+import { Routes, Route, Navigate ,useLocation} from 'react-router-dom';
+import { useEffect } from 'react';
 
 // Layouts
 import MainLayout from './layouts/MainLayout';
@@ -25,7 +27,10 @@ import PropertyDetails from './pages/public/PropertyDetails';
 import AdminEnquiry from './pages/admin/AdminEnquiry';
 import AdminUsers from './pages/admin/AdminUsers';
 
-function App() {
+
+  function App() {
+    const { pathname } = useLocation();
+    useEffect(() => { window.scrollTo({ top: 0, behavior: 'instant' }); }, [pathname]);
   return (
     <Routes>
       {/* Public Routes with Main Layout */}

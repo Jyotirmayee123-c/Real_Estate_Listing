@@ -49,8 +49,10 @@ export default function WhyChooseUs() {
           transition={{ duration: 0.5 }}
         >
           <p className="text-xs font-medium tracking-widest uppercase text-purple-400 mb-2">Why Us</p>
-          <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold text-white mb-3"
-            style={{ fontFamily: "'Playfair Display', serif" }}>
+          <h2
+            className="text-3xl sm:text-4xl md:text-5xl font-bold text-white mb-3"
+            style={{ fontFamily: "'Playfair Display', serif" }}
+          >
             Why Choose{" "}
             <span className="text-purple-400">Kalinga Homes</span>?
           </h2>
@@ -72,11 +74,25 @@ export default function WhyChooseUs() {
                 viewport={{ once: true, amount: 0.2 }}
                 transition={{ duration: 0.5, delay: index * 0.08 }}
               >
-                <div className="w-11 h-11 rounded-xl bg-purple-600/12 flex items-center justify-center mb-5 transition-colors duration-300 group-hover:bg-purple-600/20">
-                  <Icon className="text-purple-400" size={20} />
+                {/* Icon box — fixed size, no flex stretch */}
+                <div
+                  className="transition-colors duration-300 group-hover:bg-purple-600/20 mb-5"
+                  style={{
+                    width: 44,
+                    height: 44,
+                    borderRadius: 12,
+                    backgroundColor: "rgba(147, 51, 234, 0.12)",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    flexShrink: 0,
+                  }}
+                >
+                  <Icon size={20} strokeWidth={1.8} className="text-purple-400" />
                 </div>
+
                 <h3 className="text-base font-semibold text-white mb-2">{feature.title}</h3>
-                <p className="text-white/42 text-sm leading-relaxed">{feature.description}</p>
+                <p className="text-white/40 text-sm leading-relaxed">{feature.description}</p>
               </motion.div>
             );
           })}

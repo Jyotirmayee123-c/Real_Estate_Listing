@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from "react";
 import {
   MapPin, BedDouble, Bath, Ruler, Home, X, ChevronLeft, ChevronRight,
   Heart, Share2, Phone, Mail, Star, CheckCircle2, ArrowUpRight,
-  Wifi, Car, Wind, Dumbbell, Trees, Shield
+  Wifi, Car, Wind, Dumbbell, Trees, Shield, ArrowLeft,
 } from "lucide-react";
 
 /* ─── Demo fallback ─── */
@@ -44,13 +44,20 @@ const HIGHLIGHTS = [
   "Clear Title", "Gated Community",
 ];
 
+/**
+ * ViewPropertyModal
+ *
+ * Props:
+ *  - property    : property object (falls back to DEMO if omitted)
+ *  - closeModal  : () => void  — called to close/return to AdminProperty
+ */
 export default function ViewPropertyModal({ property: propData, closeModal }) {
   const property = propData || DEMO;
-  const allImgs = [property.thumbnail, ...(property.images || [])].filter(Boolean);
+  const allImgs  = [property.thumbnail, ...(property.images || [])].filter(Boolean);
 
-  const [active, setActive] = useState(0);
-  const [liked, setLiked] = useState(false);
-  const [tab, setTab] = useState("overview");
+  const [active,  setActive]  = useState(0);
+  const [liked,   setLiked]   = useState(false);
+  const [tab,     setTab]     = useState("overview");
   const [visible, setVisible] = useState(false);
   const thumbsRef = useRef(null);
 
@@ -60,6 +67,7 @@ export default function ViewPropertyModal({ property: propData, closeModal }) {
     return () => { document.body.style.overflow = ""; };
   }, []);
 
+  /* ── close with fade-out, then call parent ── */
   const close = () => {
     setVisible(false);
     setTimeout(() => closeModal?.(), 300);
@@ -101,7 +109,7 @@ export default function ViewPropertyModal({ property: propData, closeModal }) {
         }
         .vpm-wrap.in .vpm-page { transform: translateY(0); }
 
-        /* Purple ambient glow behind hero */
+        /* Purple ambient glow */
         .vpm-glow {
           position: absolute; top: 0; left: 50%; transform: translateX(-50%);
           width: 700px; height: 400px;
@@ -119,11 +127,34 @@ export default function ViewPropertyModal({ property: propData, closeModal }) {
           backdrop-filter: blur(20px);
           border-bottom: 1px solid rgba(255,255,255,0.07);
         }
+
+        /* ── Back button (left side) ── */
+        .vpm-back-btn {
+          display: inline-flex; align-items: center; gap: 7px;
+          padding: 8px 16px; border-radius: 100px;
+          font-family: 'Inter', sans-serif; font-size: 12.5px; font-weight: 500;
+          cursor: pointer; transition: all 0.22s; letter-spacing: 0.02em;
+          background: rgba(255,255,255,0.04);
+          color: rgba(255,255,255,0.6);
+          border: 1px solid rgba(255,255,255,0.1);
+        }
+        .vpm-back-btn:hover {
+          background: rgba(124,58,237,0.12);
+          border-color: rgba(167,139,250,0.45);
+          color: #a78bfa;
+        }
+
+        /* ── Brand (center) — clickable to go back ── */
         .vpm-brand {
           font-family: 'Playfair Display', serif;
           font-size: 1.15rem; font-weight: 700;
           color: #a78bfa; letter-spacing: 0.06em;
+          cursor: pointer;
+          transition: color 0.2s, opacity 0.2s;
+          user-select: none;
         }
+        .vpm-brand:hover { color: #c4b5fd; opacity: 0.85; }
+
         .vpm-topbar-r { display: flex; gap: 8px; align-items: center; }
 
         .vpm-btn {
@@ -157,28 +188,15 @@ export default function ViewPropertyModal({ property: propData, closeModal }) {
         .vpm-xbtn:hover { background: rgba(255,255,255,0.09); color: #fff; border-color: rgba(255,255,255,0.25); }
 
         /* ── Hero ── */
-        .vpm-hero {
-          position: relative; height: 500px; overflow: hidden; flex-shrink: 0;
-        }
+        .vpm-hero { position: relative; height: 500px; overflow: hidden; flex-shrink: 0; }
         @media(max-width:680px){ .vpm-hero{ height: 280px; } }
         .vpm-hero-img { width: 100%; height: 100%; object-fit: cover; transition: transform 0.7s ease; }
         .vpm-hero-img:hover { transform: scale(1.04); }
         .vpm-hero-grad {
           position: absolute; inset: 0; pointer-events: none;
-          background: linear-gradient(
-            to bottom,
-            rgba(13,13,26,0.3) 0%,
-            transparent 35%,
-            transparent 50%,
-            rgba(13,13,26,0.75) 80%,
-            rgba(13,13,26,0.97) 100%
-          );
+          background: linear-gradient(to bottom, rgba(13,13,26,0.3) 0%, transparent 35%, transparent 50%, rgba(13,13,26,0.75) 80%, rgba(13,13,26,0.97) 100%);
         }
-        /* purple tint overlay */
-        .vpm-hero-tint {
-          position: absolute; inset: 0; pointer-events: none;
-          background: rgba(109, 40, 217, 0.08);
-        }
+        .vpm-hero-tint { position: absolute; inset: 0; pointer-events: none; background: rgba(109,40,217,0.08); }
 
         .vpm-hero-nav {
           position: absolute; top: 50%; left: 0; right: 0; transform: translateY(-50%);
@@ -242,28 +260,17 @@ export default function ViewPropertyModal({ property: propData, closeModal }) {
         @media(max-width:860px){ .vpm-body{ grid-template-columns: 1fr; } }
 
         /* ── Left ── */
-        .vpm-left {
-          padding: 34px 34px 48px;
-          border-right: 1px solid rgba(255,255,255,0.06);
-          background: #0d0d1a;
-        }
+        .vpm-left { padding: 34px 34px 48px; border-right: 1px solid rgba(255,255,255,0.06); background: #0d0d1a; }
 
-        /* eyebrow label */
         .vpm-eyebrow {
           font-family: 'Inter', sans-serif; font-size: 10.5px; font-weight: 600;
-          letter-spacing: 0.1em; text-transform: uppercase;
-          color: #a78bfa; margin-bottom: 6px;
+          letter-spacing: 0.1em; text-transform: uppercase; color: #a78bfa; margin-bottom: 6px;
         }
-
-        /* Price row */
         .vpm-price-row {
           display: flex; align-items: flex-start; justify-content: space-between;
           flex-wrap: wrap; gap: 12px; margin-bottom: 28px;
         }
-        .vpm-price {
-          font-family: 'Playfair Display', serif;
-          font-size: 2.4rem; font-weight: 700; color: #fff; line-height: 1;
-        }
+        .vpm-price { font-family: 'Playfair Display', serif; font-size: 2.4rem; font-weight: 700; color: #fff; line-height: 1; }
         .vpm-price-mo { font-size: 1rem; color: #a78bfa; font-weight: 400; margin-left: 6px; }
         .vpm-chips { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 6px; }
         .vpm-chip {
@@ -274,10 +281,7 @@ export default function ViewPropertyModal({ property: propData, closeModal }) {
         .vpm-chip-p { background: rgba(124,58,237,0.15); color: #a78bfa; border: 1px solid rgba(124,58,237,0.3); }
         .vpm-chip-g { background: rgba(255,255,255,0.05); color: rgba(255,255,255,0.55); border: 1px solid rgba(255,255,255,0.1); }
 
-        /* Stats */
-        .vpm-stats {
-          display: grid; grid-template-columns: repeat(4,1fr); gap: 12px; margin-bottom: 30px;
-        }
+        .vpm-stats { display: grid; grid-template-columns: repeat(4,1fr); gap: 12px; margin-bottom: 30px; }
         @media(max-width:540px){ .vpm-stats{ grid-template-columns: repeat(2,1fr); } }
         .vpm-stat {
           background: rgba(255,255,255,0.03);
@@ -286,27 +290,15 @@ export default function ViewPropertyModal({ property: propData, closeModal }) {
           display: flex; flex-direction: column; align-items: center; gap: 8px;
           transition: border-color 0.3s, transform 0.3s, background 0.3s; cursor: default;
         }
-        .vpm-stat:hover {
-          border-color: rgba(124,58,237,0.4);
-          background: rgba(124,58,237,0.07);
-          transform: translateY(-3px);
-        }
+        .vpm-stat:hover { border-color: rgba(124,58,237,0.4); background: rgba(124,58,237,0.07); transform: translateY(-3px); }
         .vpm-stat-ico {
           width: 38px; height: 38px; border-radius: 12px;
           background: rgba(124,58,237,0.12);
-          display: flex; align-items: center; justify-content: center;
-          color: #a78bfa;
+          display: flex; align-items: center; justify-content: center; color: #a78bfa;
         }
-        .vpm-stat-l {
-          font-family: 'Inter', sans-serif; font-size: 10px;
-          color: rgba(255,255,255,0.35); text-transform: uppercase; letter-spacing: 0.07em;
-        }
-        .vpm-stat-v {
-          font-family: 'Playfair Display', serif;
-          font-size: 1.2rem; color: #fff; font-weight: 600;
-        }
+        .vpm-stat-l { font-family: 'Inter', sans-serif; font-size: 10px; color: rgba(255,255,255,0.35); text-transform: uppercase; letter-spacing: 0.07em; }
+        .vpm-stat-v { font-family: 'Playfair Display', serif; font-size: 1.2rem; color: #fff; font-weight: 600; }
 
-        /* Tabs */
         .vpm-tabs { display: flex; border-bottom: 1px solid rgba(255,255,255,0.07); margin-bottom: 26px; }
         .vpm-tab {
           padding: 10px 20px;
@@ -317,7 +309,6 @@ export default function ViewPropertyModal({ property: propData, closeModal }) {
         .vpm-tab.on { color: #a78bfa; border-bottom-color: #7c3aed; }
         .vpm-tab:hover:not(.on) { color: rgba(255,255,255,0.65); }
 
-        /* Section heading */
         .vpm-sec {
           font-family: 'Playfair Display', serif;
           font-size: 1.3rem; font-weight: 600; color: #fff;
@@ -325,12 +316,8 @@ export default function ViewPropertyModal({ property: propData, closeModal }) {
         }
         .vpm-sec::after { content: ''; flex: 1; height: 1px; background: rgba(255,255,255,0.07); }
 
-        .vpm-desc {
-          font-family: 'Inter', sans-serif; font-size: 14px; line-height: 1.82;
-          color: rgba(255,255,255,0.45); margin-bottom: 28px;
-        }
+        .vpm-desc { font-family: 'Inter', sans-serif; font-size: 14px; line-height: 1.82; color: rgba(255,255,255,0.45); margin-bottom: 28px; }
 
-        /* Grid items */
         .vpm-g2 { display: grid; grid-template-columns: repeat(2,1fr); gap: 10px; margin-bottom: 24px; }
         .vpm-g3 { display: grid; grid-template-columns: repeat(3,1fr); gap: 10px; margin-bottom: 24px; }
         @media(max-width:480px){ .vpm-g2,.vpm-g3{ grid-template-columns: repeat(2,1fr); } }
@@ -346,35 +333,24 @@ export default function ViewPropertyModal({ property: propData, closeModal }) {
         .vpm-item:hover { border-color: rgba(124,58,237,0.35); background: rgba(124,58,237,0.06); }
         .vpm-item svg { color: #a78bfa; flex-shrink: 0; }
 
-        /* Gallery */
         .vpm-gallery { display: grid; grid-template-columns: repeat(3,1fr); grid-auto-rows: 128px; gap: 10px; }
         .vpm-gi { border-radius: 14px; overflow: hidden; cursor: pointer; position: relative; }
         .vpm-gi:first-child { grid-column: span 2; grid-row: span 2; }
         .vpm-gi img { width: 100%; height: 100%; object-fit: cover; transition: transform 0.4s ease; }
         .vpm-gi:hover img { transform: scale(1.07); }
-        .vpm-gi::after {
-          content: ''; position: absolute; inset: 0; border-radius: 14px;
-          background: rgba(124,58,237,0); transition: background 0.3s;
-        }
+        .vpm-gi::after { content: ''; position: absolute; inset: 0; border-radius: 14px; background: rgba(124,58,237,0); transition: background 0.3s; }
         .vpm-gi:hover::after { background: rgba(124,58,237,0.12); }
 
         /* ── Right ── */
-        .vpm-right {
-          padding: 34px 24px;
-          background: rgba(13,13,26,0.98);
-          display: flex; flex-direction: column; gap: 16px;
-        }
+        .vpm-right { padding: 34px 24px; background: rgba(13,13,26,0.98); display: flex; flex-direction: column; gap: 16px; }
 
-        /* Glass card */
         .vpm-card {
           background: rgba(255,255,255,0.03);
           border: 1px solid rgba(255,255,255,0.07);
-          border-radius: 20px; padding: 22px;
-          transition: border-color 0.3s;
+          border-radius: 20px; padding: 22px; transition: border-color 0.3s;
         }
         .vpm-card:hover { border-color: rgba(124,58,237,0.25); }
 
-        /* Agent */
         .vpm-avatar {
           width: 68px; height: 68px; border-radius: 50%;
           margin: 0 auto 13px;
@@ -384,19 +360,9 @@ export default function ViewPropertyModal({ property: propData, closeModal }) {
           font-size: 1.75rem; font-weight: 700; color: #fff;
           box-shadow: 0 0 0 4px rgba(124,58,237,0.2), 0 0 0 8px rgba(124,58,237,0.07);
         }
-        .vpm-a-name {
-          font-family: 'Playfair Display', serif;
-          font-size: 1.15rem; color: #fff; text-align: center; margin-bottom: 3px;
-        }
-        .vpm-a-role {
-          font-family: 'Inter', sans-serif; font-size: 11.5px;
-          color: rgba(255,255,255,0.35); text-align: center; margin-bottom: 12px;
-        }
-        .vpm-stars {
-          display: flex; align-items: center; justify-content: center; gap: 3px;
-          color: #a78bfa; margin-bottom: 16px;
-          font-family: 'Inter', sans-serif; font-size: 11.5px;
-        }
+        .vpm-a-name { font-family: 'Playfair Display', serif; font-size: 1.15rem; color: #fff; text-align: center; margin-bottom: 3px; }
+        .vpm-a-role { font-family: 'Inter', sans-serif; font-size: 11.5px; color: rgba(255,255,255,0.35); text-align: center; margin-bottom: 12px; }
+        .vpm-stars { display: flex; align-items: center; justify-content: center; gap: 3px; color: #a78bfa; margin-bottom: 16px; font-family: 'Inter', sans-serif; font-size: 11.5px; }
         .vpm-stars span { color: rgba(255,255,255,0.3); margin-left: 5px; }
 
         .vpm-ctas { display: flex; flex-direction: column; gap: 8px; }
@@ -408,13 +374,9 @@ export default function ViewPropertyModal({ property: propData, closeModal }) {
         }
         .vpm-cta-p { background: #7c3aed; color: #fff; }
         .vpm-cta-p:hover { background: #6d28d9; transform: translateY(-1px); box-shadow: 0 8px 24px rgba(124,58,237,0.3); }
-        .vpm-cta-o {
-          background: transparent; color: rgba(255,255,255,0.65);
-          border: 1px solid rgba(255,255,255,0.1);
-        }
+        .vpm-cta-o { background: transparent; color: rgba(255,255,255,0.65); border: 1px solid rgba(255,255,255,0.1); }
         .vpm-cta-o:hover { border-color: rgba(124,58,237,0.4); color: #a78bfa; }
 
-        /* Detail rows */
         .vpm-ct { font-family: 'Inter', sans-serif; font-size: 10px; font-weight: 600; color: #a78bfa; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 14px; }
         .vpm-drow {
           display: flex; justify-content: space-between; align-items: center;
@@ -425,24 +387,13 @@ export default function ViewPropertyModal({ property: propData, closeModal }) {
         .vpm-dk { color: rgba(255,255,255,0.35); }
         .vpm-dv { color: #fff; font-weight: 500; text-transform: capitalize; }
 
-        /* Map */
-        .vpm-map {
-          height: 148px; position: relative;
-          background: #0a0a18; overflow: hidden; cursor: pointer;
-          border-radius: 0 0 18px 18px;
-        }
+        .vpm-map { height: 148px; position: relative; background: #0a0a18; overflow: hidden; cursor: pointer; border-radius: 0 0 18px 18px; }
         .vpm-map-grid {
           position: absolute; inset: 0;
-          background-image:
-            linear-gradient(rgba(124,58,237,0.06) 1px, transparent 1px),
-            linear-gradient(90deg, rgba(124,58,237,0.06) 1px, transparent 1px);
+          background-image: linear-gradient(rgba(124,58,237,0.06) 1px, transparent 1px), linear-gradient(90deg, rgba(124,58,237,0.06) 1px, transparent 1px);
           background-size: 24px 24px;
         }
-        .vpm-map-dot {
-          position: absolute; top: 50%; left: 50%;
-          transform: translate(-50%, -50%);
-          display: flex; flex-direction: column; align-items: center; gap: 8px;
-        }
+        .vpm-map-dot { position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%); display: flex; flex-direction: column; align-items: center; gap: 8px; }
         .vpm-pulse {
           width: 13px; height: 13px; border-radius: 50%; background: #7c3aed;
           box-shadow: 0 0 0 5px rgba(124,58,237,0.22), 0 0 0 10px rgba(124,58,237,0.09);
@@ -454,14 +405,12 @@ export default function ViewPropertyModal({ property: propData, closeModal }) {
         }
         .vpm-map-tag {
           background: rgba(13,13,26,0.9); color: rgba(255,255,255,0.65);
-          border: 1px solid rgba(124,58,237,0.25);
-          border-radius: 100px; padding: 4px 12px;
+          border: 1px solid rgba(124,58,237,0.25); border-radius: 100px; padding: 4px 12px;
           font-family: 'Inter', sans-serif; font-size: 11px;
           display: flex; align-items: center; gap: 5px; white-space: nowrap;
         }
         .vpm-map-tag svg { color: #a78bfa; }
 
-        /* Animations */
         .vpm-fadein { animation: vpm-fi 0.45s ease both; }
         @keyframes vpm-fi { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
       `}</style>
@@ -471,7 +420,18 @@ export default function ViewPropertyModal({ property: propData, closeModal }) {
 
           {/* ── Topbar ── */}
           <div className="vpm-topbar">
-            <div className="vpm-brand">Kalinga Homes</div>
+
+            {/* ← Back button — returns to AdminProperty */}
+            <button className="vpm-back-btn" onClick={close}>
+              <ArrowLeft size={13} />
+              Back to Properties
+            </button>
+
+            {/* Brand — also returns to AdminProperty on click */}
+            <div className="vpm-brand" onClick={close} title="Back to Admin">
+              Kalinga Homes
+            </div>
+
             <div className="vpm-topbar-r">
               <button
                 className={`vpm-btn ${liked ? "vpm-btn-liked" : "vpm-btn-ghost"}`}
@@ -553,7 +513,7 @@ export default function ViewPropertyModal({ property: propData, closeModal }) {
                   { icon: <BedDouble size={17} />, l: "Bedrooms",  v: property.bedrooms },
                   { icon: <Bath size={17} />,      l: "Bathrooms", v: property.bathrooms },
                   { icon: <Ruler size={17} />,     l: "Area",      v: `${property.area?.toLocaleString()} ft²` },
-                  { icon: <Home size={17} />,       l: "Type",      v: property.propertyType },
+                  { icon: <Home size={17} />,      l: "Type",      v: property.propertyType },
                 ].map((s, i) => (
                   <div key={i} className="vpm-stat">
                     <div className="vpm-stat-ico">{s.icon}</div>
@@ -572,7 +532,6 @@ export default function ViewPropertyModal({ property: propData, closeModal }) {
                 ))}
               </div>
 
-              {/* Tab: Overview */}
               {tab === "overview" && (
                 <div className="vpm-fadein">
                   <div className="vpm-sec">About the Property</div>
@@ -586,7 +545,6 @@ export default function ViewPropertyModal({ property: propData, closeModal }) {
                 </div>
               )}
 
-              {/* Tab: Amenities */}
               {tab === "amenities" && (
                 <div className="vpm-fadein">
                   <div className="vpm-sec">Building Amenities</div>
@@ -598,7 +556,6 @@ export default function ViewPropertyModal({ property: propData, closeModal }) {
                 </div>
               )}
 
-              {/* Tab: Gallery */}
               {tab === "gallery" && (
                 <div className="vpm-fadein">
                   <div className="vpm-sec">Photo Gallery</div>

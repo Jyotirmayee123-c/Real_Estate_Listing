@@ -4,7 +4,7 @@ import api from "../../services/api";
 import {
   X, ChevronRight, ChevronLeft, CheckCircle,
   Home, IndianRupee, MapPin, Image, Star,
-  BedDouble, Bath, Maximize2, AlertTriangle,
+  BedDouble, Bath, Maximize2, AlertTriangle, Users,
 } from "lucide-react";
 
 // ── Steps ─────────────────────────────────────────────────────────────────────
@@ -23,6 +23,61 @@ function Field({ label, required, error, children }) {
       {children}
       {error && <p className="text-red-400 text-xs flex items-center gap-1"><AlertTriangle size={10} />{error}</p>}
     </div>
+  );
+}
+
+// ── Suitable For Button Group ─────────────────────────────────────────────────
+const SUITABLE_OPTIONS = [
+  {
+    value: "bachelor",
+    label: "Bachelor",
+    emoji: "🧑‍💼",
+    activeColor: "bg-blue-600/20 border-blue-500/60 text-blue-300",
+    dotColor: "bg-blue-500",
+  },
+  {
+    value: "family",
+    label: "Family",
+    emoji: "👨‍👩‍👧",
+    activeColor: "bg-emerald-600/20 border-emerald-500/60 text-emerald-300",
+    dotColor: "bg-emerald-500",
+  },
+  {
+    value: "others",
+    label: "Others",
+    emoji: "🏢",
+    activeColor: "bg-orange-600/20 border-orange-500/60 text-orange-300",
+    dotColor: "bg-orange-500",
+  },
+];
+
+function SuitableForToggle({ value, onChange }) {
+  return (
+    <Field label="Suitable For">
+      <div className="flex gap-3">
+        {SUITABLE_OPTIONS.map((opt) => {
+          const isActive = value === opt.value;
+          return (
+            <button
+              key={opt.value}
+              type="button"
+              onClick={() => onChange(isActive ? "" : opt.value)}
+              className={`flex-1 flex flex-col items-center gap-1.5 py-3 rounded-xl border-2 text-xs font-semibold transition-all duration-200 select-none
+                ${isActive
+                  ? opt.activeColor + " scale-[1.04] shadow-lg"
+                  : "bg-[#1a1a2e] border-purple-900/30 text-gray-500 hover:border-purple-500/40 hover:text-gray-300"
+                }`}
+            >
+              <span className="text-xl leading-none">{opt.emoji}</span>
+              <span>{opt.label}</span>
+              {isActive && (
+                <span className={`w-1.5 h-1.5 rounded-full ${opt.dotColor}`} />
+              )}
+            </button>
+          );
+        })}
+      </div>
+    </Field>
   );
 }
 
@@ -79,6 +134,7 @@ const CreatePropertyModal = ({ closeModal, editMode = false, propertyData }) => 
     thumbnail: "", propertyImages: "",
     bedrooms: "", bathrooms: "", area: "",
     isFeatured: false,
+    suitableFor: "",   // ← new field
   });
 
   // Pre-fill for edit mode
@@ -98,6 +154,7 @@ const CreatePropertyModal = ({ closeModal, editMode = false, propertyData }) => 
         bathrooms:      propertyData.bathrooms      || "",
         area:           propertyData.area           || "",
         isFeatured:     propertyData.isFeatured     || false,
+        suitableFor:    propertyData.suitableFor    || "",
       });
     }
   }, [editMode, propertyData]);
@@ -183,6 +240,9 @@ const CreatePropertyModal = ({ closeModal, editMode = false, propertyData }) => 
 
   const previewImages = formData.propertyImages.split(",").map(u => u.trim()).filter(Boolean);
 
+  // Suitable For label for confirm screen
+  const suitableLabel = SUITABLE_OPTIONS.find(o => o.value === formData.suitableFor);
+
   return (
     <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4">
       <motion.div
@@ -259,8 +319,8 @@ const CreatePropertyModal = ({ closeModal, editMode = false, propertyData }) => 
                       <option value="apartment">Apartment</option>
                       <option value="house">House</option>
                       <option value="commercial">Commercial</option>
-                      <option value="land">Land</option>
-                      <option value="other">Other</option>
+                      {/* <option value="land">Land</option>
+                      <option value="other">Other</option> */}
                     </select>
                   </Field>
                   <Field label="Description" required error={errors.description}>
@@ -341,6 +401,12 @@ const CreatePropertyModal = ({ closeModal, editMode = false, propertyData }) => 
                     </Field>
                   </div>
 
+                  {/* ── Suitable For ── */}
+                  <SuitableForToggle
+                    value={formData.suitableFor}
+                    onChange={(val) => set("suitableFor", val)}
+                  />
+
                   {/* Featured toggle */}
                   <div
                     onClick={() => set("isFeatured", !formData.isFeatured)}
@@ -399,10 +465,11 @@ const CreatePropertyModal = ({ closeModal, editMode = false, propertyData }) => 
                     {/* Details */}
                     <div className="bg-[#252544] border border-purple-900/30 rounded-2xl p-4 space-y-1">
                       <p className="text-purple-400 text-[10px] font-bold uppercase tracking-widest mb-2">Details</p>
-                      <ConfirmRow label="Bedrooms"  value={formData.bedrooms} />
-                      <ConfirmRow label="Bathrooms" value={formData.bathrooms} />
-                      <ConfirmRow label="Area"      value={formData.area ? `${formData.area} sq.ft` : ""} />
-                      <ConfirmRow label="Featured"  value={formData.isFeatured ? "Yes ⭐" : "No"} />
+                      <ConfirmRow label="Bedrooms"     value={formData.bedrooms} />
+                      <ConfirmRow label="Bathrooms"    value={formData.bathrooms} />
+                      <ConfirmRow label="Area"         value={formData.area ? `${formData.area} sq.ft` : ""} />
+                      <ConfirmRow label="Suitable For" value={suitableLabel ? `${suitableLabel.emoji} ${suitableLabel.label}` : "Not specified"} />
+                      <ConfirmRow label="Featured"     value={formData.isFeatured ? "Yes ⭐" : "No"} />
                     </div>
 
                     {/* Media */}
@@ -444,7 +511,6 @@ const CreatePropertyModal = ({ closeModal, editMode = false, propertyData }) => 
           </button>
 
           <div className="flex items-center gap-2">
-            {/* Dot indicators */}
             {STEPS.map((_, i) => (
               <div key={i} className={`rounded-full transition-all duration-300 ${i === step ? "w-4 h-2 bg-purple-500" : i < step ? "w-2 h-2 bg-purple-600" : "w-2 h-2 bg-purple-900/40"}`} />
             ))}

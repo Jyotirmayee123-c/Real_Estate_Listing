@@ -1,70 +1,175 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { Phone } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import SearchBar from "./SearchBar";
 
-export default function Banner() {
-  return (
-    <div className="min-h-screen relative overflow-x-hidden bg-[#0d0d1a]">
+const BG_IMAGES = [
+  "https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?w=1600&q=80&fit=crop",
+  "https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?w=1600&q=80&fit=crop",
+  "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=1600&q=80&fit=crop",
+  "https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?w=1600&q=80&fit=crop",
+  "https://images.unsplash.com/photo-1512917774080-9991f1c4c750?w=1600&q=80&fit=crop",
+];
 
-      {/* Purple glow behind hero */}
-      <div className="absolute inset-0 pointer-events-none">
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[700px] h-[400px] bg-purple-700/20 rounded-full blur-[120px]" />
+const FADE_DURATION = 1000;
+const SLIDE_INTERVAL = 5000;
+
+// ── Button config: label → route with optional query params ──
+const CTA_BUTTONS = [
+  { label: "Buy a Property",  path: "/properties", query: "?category=buy"  },
+  { label: "Rent a Property", path: "/properties", query: "?category=rent" },
+  { label: "List Your Property", path: "/list-property", query: "" },
+];
+
+export default function Banner() {
+  const navigate = useNavigate();
+
+  const [active, setActive]           = useState(0);
+  const [next, setNext]               = useState(1);
+  const [transitioning, setTransitioning] = useState(false);
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      const nextIndex = (active + 1) % BG_IMAGES.length;
+      setNext(nextIndex);
+      setTransitioning(true);
+      setTimeout(() => {
+        setActive(nextIndex);
+        setNext((nextIndex + 1) % BG_IMAGES.length);
+        setTransitioning(false);
+      }, FADE_DURATION);
+    }, SLIDE_INTERVAL);
+    return () => clearInterval(timer);
+  }, [active]);
+
+  const goTo = (i) => {
+    if (i === active || transitioning) return;
+    setNext(i);
+    setTransitioning(true);
+    setTimeout(() => {
+      setActive(i);
+      setNext((i + 1) % BG_IMAGES.length);
+      setTransitioning(false);
+    }, FADE_DURATION);
+  };
+
+  // ── Navigate to /properties with correct query param ──
+  const handleCTA = (btn) => {
+    navigate(btn.path + btn.query);
+  };
+
+  return (
+    <div className="min-h-screen relative overflow-hidden bg-[#0d0d1a]">
+
+      {/* ── Background slideshow ── */}
+      <div className="absolute inset-0 z-0">
+        <img
+          src={BG_IMAGES[active]}
+          alt="Property background"
+          className="absolute inset-0 w-full h-full object-cover"
+          style={{ opacity: 1 }}
+        />
+        <img
+          key={next}
+          src={BG_IMAGES[next]}
+          alt=""
+          aria-hidden="true"
+          className="absolute inset-0 w-full h-full object-cover"
+          style={{
+            opacity: transitioning ? 1 : 0,
+            transition: transitioning
+              ? `opacity ${FADE_DURATION}ms ease-in-out`
+              : "none",
+          }}
+        />
+        <div className="absolute inset-0 bg-gradient-to-b from-[#0d0d1a]/70 via-[#0d0d1a]/55 to-[#0d0d1a]/90" />
+        <div
+          className="absolute inset-0 opacity-[0.08] mix-blend-overlay"
+          style={{
+            backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")`,
+            backgroundSize: "256px",
+          }}
+        />
       </div>
 
+      {/* ── Purple glow accent ── */}
+      <div className="absolute inset-0 pointer-events-none z-[1]">
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[700px] h-[400px] bg-purple-700/25 rounded-full blur-[130px]" />
+        <div className="absolute bottom-0 right-0 w-[400px] h-[300px] bg-purple-900/20 rounded-full blur-[100px]" />
+      </div>
+
+      {/* ── Slide indicators ── */}
+      <div className="absolute bottom-32 sm:bottom-20 left-1/2 -translate-x-1/2 z-20 flex items-center gap-2">
+        {BG_IMAGES.map((_, i) => (
+          <button
+            key={i}
+            onClick={() => goTo(i)}
+            className={`rounded-full transition-all duration-300 ${
+              i === active
+                ? "w-6 h-2 bg-purple-400"
+                : "w-2 h-2 bg-white/30 hover:bg-white/50"
+            }`}
+            aria-label={`Slide ${i + 1}`}
+          />
+        ))}
+      </div>
+
+      {/* ── Main content ── */}
       <div className="relative z-10">
-        {/* Hero Content */}
         <div className="flex flex-col items-center justify-center px-4 sm:px-6 md:px-8 pt-20 sm:pt-28 pb-16 sm:pb-24 text-center">
 
-          {/* Eyebrow Badge */}
-          <div className="inline-flex items-center gap-2 bg-purple-500/10 border border-purple-500/30 text-purple-300 text-xs font-medium tracking-widest uppercase px-4 py-2 rounded-full mb-8">
-            <span className="w-1.5 h-1.5 bg-purple-400 rounded-full inline-block" />
+          <div className="inline-flex items-center gap-2 bg-purple-500/10 border border-purple-500/30 text-purple-300 text-xs font-medium tracking-widest uppercase px-4 py-2 rounded-full mb-8 backdrop-blur-sm">
+            <span className="w-1.5 h-1.5 bg-purple-400 rounded-full inline-block animate-pulse" />
             Bhubaneswar's Most Trusted Real Estate
           </div>
 
-          {/* Heading */}
-          <h1 className="text-white text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold text-center mb-5 max-w-4xl mx-auto leading-tight"
-            style={{ fontFamily: "'Playfair Display', serif" }}>
+          <h1
+            className="text-white text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold text-center mb-5 max-w-4xl mx-auto leading-tight drop-shadow-2xl"
+            style={{ fontFamily: "'Playfair Display', serif" }}
+          >
             Discover Your{" "}
             <em className="text-purple-400 not-italic">Dream Home</em>{" "}
             in Bhubaneswar
           </h1>
 
-          {/* Subheading */}
-          <p className="text-white/55 text-base sm:text-lg md:text-xl text-center mb-10 max-w-xl mx-auto leading-relaxed">
+          <p className="text-white/60 text-base sm:text-lg md:text-xl text-center mb-10 max-w-xl mx-auto leading-relaxed drop-shadow-lg">
             Verified flats, houses & rentals with trust and transparency from Kalinga Homes.
           </p>
 
-          {/* Search Bar */}
           <SearchBar />
 
-          {/* Action Buttons */}
+          {/* ── CTA Buttons — now navigate to Properties with filter ── */}
           <div className="flex flex-col sm:flex-row justify-center gap-3 mt-8 mb-14 px-2">
-            {["Buy a Property", "Rent a Property", "List Your Property"].map((label) => (
+            {CTA_BUTTONS.map((btn) => (
               <button
-                key={label}
-                className="border border-white/25 text-white/80 bg-white/4 hover:bg-purple-600 hover:border-purple-600 hover:text-white cursor-pointer px-7 py-3 rounded-full transition-all duration-300 font-medium hover:scale-105 active:scale-95 text-sm sm:text-base whitespace-nowrap backdrop-blur-sm"
+                key={btn.label}
+                onClick={() => handleCTA(btn)}
+                className="border border-white/25 text-white/80 bg-white/5 hover:bg-purple-600 hover:border-purple-600 hover:text-white cursor-pointer px-7 py-3 rounded-full transition-all duration-300 font-medium hover:scale-105 active:scale-95 text-sm sm:text-base whitespace-nowrap backdrop-blur-sm"
               >
-                {label}
+                {btn.label}
               </button>
             ))}
           </div>
 
-          {/* Stats */}
           <div className="flex flex-col sm:flex-row items-center gap-8 sm:gap-12 text-center text-white">
-            <div>
-              <div className="text-4xl sm:text-5xl font-bold mb-1" style={{ fontFamily: "'Playfair Display', serif" }}>1000+</div>
-              <div className="text-sm text-white/45">Happy Clients</div>
-            </div>
-            <div className="hidden sm:block w-px h-12 bg-white/10" />
-            <div>
-              <div className="text-4xl sm:text-5xl font-bold mb-1" style={{ fontFamily: "'Playfair Display', serif" }}>500+</div>
-              <div className="text-sm text-white/45">Verified Properties</div>
-            </div>
-            <div className="hidden sm:block w-px h-12 bg-white/10" />
-            <div>
-              <div className="text-4xl sm:text-5xl font-bold mb-1" style={{ fontFamily: "'Playfair Display', serif" }}>2024</div>
-              <div className="text-sm text-white/45">Trusted Since</div>
-            </div>
+            {[
+              { value: "1000+", label: "Happy Clients"       },
+              { value: "500+",  label: "Verified Properties" },
+              { value: "2024",  label: "Trusted Since"       },
+            ].map((stat, i) => (
+              <React.Fragment key={stat.label}>
+                {i > 0 && <div className="hidden sm:block w-px h-12 bg-white/15" />}
+                <div>
+                  <div
+                    className="text-4xl sm:text-5xl font-bold mb-1 drop-shadow-lg"
+                    style={{ fontFamily: "'Playfair Display', serif" }}
+                  >
+                    {stat.value}
+                  </div>
+                  <div className="text-sm text-white/45">{stat.label}</div>
+                </div>
+              </React.Fragment>
+            ))}
           </div>
         </div>
 
