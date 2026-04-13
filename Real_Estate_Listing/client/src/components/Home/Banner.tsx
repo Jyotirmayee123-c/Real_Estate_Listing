@@ -14,18 +14,17 @@ const BG_IMAGES = [
 const FADE_DURATION = 1000;
 const SLIDE_INTERVAL = 5000;
 
-// ── Button config: label → route with optional query params ──
 const CTA_BUTTONS = [
-  { label: "Buy a Property",  path: "/properties", query: "?category=buy"  },
-  { label: "Rent a Property", path: "/properties", query: "?category=rent" },
-  { label: "List Your Property", path: "/list-property", query: "" },
+  { label: "Buy a Property",     path: "/properties", query: "?category=buy"  },
+  { label: "Rent a Property",    path: "/properties", query: "?category=rent" },
+  { label: "List Your Property", path: "/properties", query: ""               }, // ← shows all properties
 ];
 
 export default function Banner() {
   const navigate = useNavigate();
 
-  const [active, setActive]           = useState(0);
-  const [next, setNext]               = useState(1);
+  const [active,        setActive]        = useState(0);
+  const [next,          setNext]          = useState(1);
   const [transitioning, setTransitioning] = useState(false);
 
   useEffect(() => {
@@ -53,7 +52,6 @@ export default function Banner() {
     }, FADE_DURATION);
   };
 
-  // ── Navigate to /properties with correct query param ──
   const handleCTA = (btn) => {
     navigate(btn.path + btn.query);
   };
@@ -61,7 +59,7 @@ export default function Banner() {
   return (
     <div className="min-h-screen relative overflow-hidden bg-[#0d0d1a]">
 
-      {/* ── Background slideshow ── */}
+      {/* Background slideshow */}
       <div className="absolute inset-0 z-0">
         <img
           src={BG_IMAGES[active]}
@@ -77,9 +75,7 @@ export default function Banner() {
           className="absolute inset-0 w-full h-full object-cover"
           style={{
             opacity: transitioning ? 1 : 0,
-            transition: transitioning
-              ? `opacity ${FADE_DURATION}ms ease-in-out`
-              : "none",
+            transition: transitioning ? `opacity ${FADE_DURATION}ms ease-in-out` : "none",
           }}
         />
         <div className="absolute inset-0 bg-gradient-to-b from-[#0d0d1a]/70 via-[#0d0d1a]/55 to-[#0d0d1a]/90" />
@@ -92,29 +88,27 @@ export default function Banner() {
         />
       </div>
 
-      {/* ── Purple glow accent ── */}
+      {/* Purple glow accent */}
       <div className="absolute inset-0 pointer-events-none z-[1]">
         <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[700px] h-[400px] bg-purple-700/25 rounded-full blur-[130px]" />
         <div className="absolute bottom-0 right-0 w-[400px] h-[300px] bg-purple-900/20 rounded-full blur-[100px]" />
       </div>
 
-      {/* ── Slide indicators ── */}
+      {/* Slide indicators */}
       <div className="absolute bottom-32 sm:bottom-20 left-1/2 -translate-x-1/2 z-20 flex items-center gap-2">
         {BG_IMAGES.map((_, i) => (
           <button
             key={i}
             onClick={() => goTo(i)}
             className={`rounded-full transition-all duration-300 ${
-              i === active
-                ? "w-6 h-2 bg-purple-400"
-                : "w-2 h-2 bg-white/30 hover:bg-white/50"
+              i === active ? "w-6 h-2 bg-purple-400" : "w-2 h-2 bg-white/30 hover:bg-white/50"
             }`}
             aria-label={`Slide ${i + 1}`}
           />
         ))}
       </div>
 
-      {/* ── Main content ── */}
+      {/* Main content */}
       <div className="relative z-10">
         <div className="flex flex-col items-center justify-center px-4 sm:px-6 md:px-8 pt-20 sm:pt-28 pb-16 sm:pb-24 text-center">
 
@@ -138,7 +132,7 @@ export default function Banner() {
 
           <SearchBar />
 
-          {/* ── CTA Buttons — now navigate to Properties with filter ── */}
+          {/* CTA Buttons */}
           <div className="flex flex-col sm:flex-row justify-center gap-3 mt-8 mb-14 px-2">
             {CTA_BUTTONS.map((btn) => (
               <button
@@ -160,10 +154,7 @@ export default function Banner() {
               <React.Fragment key={stat.label}>
                 {i > 0 && <div className="hidden sm:block w-px h-12 bg-white/15" />}
                 <div>
-                  <div
-                    className="text-4xl sm:text-5xl font-bold mb-1 drop-shadow-lg"
-                    style={{ fontFamily: "'Playfair Display', serif" }}
-                  >
+                  <div className="text-4xl sm:text-5xl font-bold mb-1 drop-shadow-lg" style={{ fontFamily: "'Playfair Display', serif" }}>
                     {stat.value}
                   </div>
                   <div className="text-sm text-white/45">{stat.label}</div>
@@ -173,7 +164,7 @@ export default function Banner() {
           </div>
         </div>
 
-        {/* Phone Side Button — desktop */}
+        {/* Phone Side Button - desktop */}
         <a
           href="tel:+919438185822"
           className="hidden sm:flex fixed left-0 top-1/2 -translate-y-1/2 bg-purple-600 hover:bg-purple-700 text-white px-2.5 py-8 rounded-r-lg shadow-lg transition items-center justify-center z-20 group"
@@ -181,23 +172,23 @@ export default function Banner() {
           aria-label="Call +91 9438185822"
         >
           <Phone className="mb-2 rotate-90 group-hover:scale-110 transition-transform" size={16} />
-          <span className="font-medium text-sm whitespace-nowrap">+91 9438185822</span>
+          <span className="font-medium text-sm whitespace-nowrap">+91 7849039292</span>
         </a>
 
-        {/* Phone FAB — mobile */}
+        {/* Phone FAB - mobile */}
         <a
-          href="tel:+919438185822"
+          href="tel:+917849039292"
           className="sm:hidden fixed bottom-20 left-4 bg-purple-600 hover:bg-purple-700 text-white p-3 rounded-full shadow-lg z-20 flex items-center justify-center"
-          aria-label="Call +91 9438185822"
+          aria-label="Call +917849039292"
         >
           <Phone size={20} />
         </a>
 
         {/* WhatsApp FAB */}
         <a
-          href="https://wa.me/919438185822"
+          href="https://wa.me/917849039292"
           target="_blank"
-          rel="noopener noreferrer"
+          rel="Jyotirmayee panda"
           className="fixed bottom-6 right-6 bg-green-500 hover:bg-green-600 text-white p-3.5 rounded-full shadow-lg z-20 hover:scale-110 active:scale-95 transition-all"
           aria-label="Chat on WhatsApp"
         >
@@ -206,6 +197,7 @@ export default function Banner() {
           </svg>
         </a>
       </div>
+
     </div>
   );
 }

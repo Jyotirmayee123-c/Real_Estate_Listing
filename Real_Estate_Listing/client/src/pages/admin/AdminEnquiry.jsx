@@ -6,6 +6,7 @@ import {
   X, CheckCircle, AlertTriangle, MapPin,
   Phone, Mail, MessageSquare, Calendar,
   Building2, IndianRupee, Eye, ChevronDown, ChevronUp,
+  Send, Reply,
 } from "lucide-react";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -22,16 +23,11 @@ const fmtDate = (d) =>
 const fmtTime = (d) =>
   new Date(d).toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" });
 
-// ── Skeleton Pulse ─────────────────────────────────────────────────────────────
+// ── Skeleton ──────────────────────────────────────────────────────────────────
 function SkeletonBox({ className }) {
-  return (
-    <div
-      className={`rounded-xl bg-purple-900/20 animate-pulse ${className}`}
-    />
-  );
+  return <div className={`rounded-xl bg-purple-900/20 animate-pulse ${className}`} />;
 }
 
-// ── Skeleton Mini Stat ─────────────────────────────────────────────────────────
 function SkeletonMiniStat() {
   return (
     <div className="flex items-center gap-3 border border-purple-900/20 rounded-2xl px-4 py-3 bg-purple-600/5">
@@ -44,52 +40,33 @@ function SkeletonMiniStat() {
   );
 }
 
-// ── Skeleton Enquiry Card ──────────────────────────────────────────────────────
 function SkeletonEnquiryCard({ delay = 0 }) {
   return (
     <motion.div
       className="bg-[#252544] border border-purple-900/20 rounded-2xl overflow-hidden"
-      initial={{ opacity: 0, y: 15 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.3, delay }}
+      initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3, delay }}
     >
       <div className="p-5 grid grid-cols-1 md:grid-cols-3 gap-5">
-
-        {/* Property skeleton */}
         <div className="flex gap-3">
           <SkeletonBox className="w-20 h-20 flex-shrink-0" />
           <div className="space-y-2 flex-1 min-w-0">
-            <SkeletonBox className="h-4 w-36" />
-            <SkeletonBox className="h-4 w-20" />
-            <SkeletonBox className="h-3 w-24" />
-            <SkeletonBox className="h-5 w-16 rounded-full" />
+            <SkeletonBox className="h-4 w-36" /><SkeletonBox className="h-4 w-20" />
+            <SkeletonBox className="h-3 w-24" /><SkeletonBox className="h-5 w-16 rounded-full" />
           </div>
         </div>
-
-        {/* Enquirer skeleton */}
         <div className="space-y-2.5">
           <SkeletonBox className="h-3 w-16 rounded-full" />
-          <div className="flex items-center gap-2">
-            <SkeletonBox className="w-6 h-6 rounded-full flex-shrink-0" />
-            <SkeletonBox className="h-4 w-28" />
-          </div>
-          <SkeletonBox className="h-3 w-44" />
-          <SkeletonBox className="h-3 w-28" />
+          <div className="flex items-center gap-2"><SkeletonBox className="w-6 h-6 rounded-full flex-shrink-0" /><SkeletonBox className="h-4 w-28" /></div>
+          <SkeletonBox className="h-3 w-44" /><SkeletonBox className="h-3 w-28" />
         </div>
-
-        {/* Date + actions skeleton */}
         <div className="flex flex-col justify-between items-start md:items-end gap-3">
-          <div className="space-y-2 md:items-end flex flex-col">
-            <SkeletonBox className="h-3 w-28" />
-            <SkeletonBox className="h-3 w-16" />
-            <SkeletonBox className="h-6 w-20 rounded-full" />
+          <div className="space-y-1.5 md:items-end flex flex-col">
+            <SkeletonBox className="h-3 w-28" /><SkeletonBox className="h-3 w-16" /><SkeletonBox className="h-6 w-20 rounded-full" />
           </div>
           <div className="flex gap-2">
-            <SkeletonBox className="h-8 w-24 rounded-xl" />
-            <SkeletonBox className="h-8 w-20 rounded-xl" />
+            <SkeletonBox className="h-8 w-20 rounded-xl" /><SkeletonBox className="h-8 w-24 rounded-xl" /><SkeletonBox className="h-8 w-20 rounded-xl" />
           </div>
         </div>
-
       </div>
     </motion.div>
   );
@@ -105,9 +82,7 @@ function MiniStat({ icon, label, value, color }) {
   };
   return (
     <div className={`flex items-center gap-3 border rounded-2xl px-4 py-3 ${c[color]}`}>
-      <div className="w-9 h-9 rounded-xl bg-white/10 flex items-center justify-center flex-shrink-0">
-        {icon}
-      </div>
+      <div className="w-9 h-9 rounded-xl bg-white/10 flex items-center justify-center flex-shrink-0">{icon}</div>
       <div>
         <p className="text-white font-black text-lg leading-tight">{value}</p>
         <p className="text-xs text-gray-400">{label}</p>
@@ -131,6 +106,183 @@ function Toast({ msg, type, onClose }) {
   );
 }
 
+// ── Reply Modal ───────────────────────────────────────────────────────────────
+function ReplyModal({ enquiry, onClose, showToast }) {
+  const [replyMethod, setReplyMethod] = useState("email");
+  const [subject, setSubject]         = useState(`Re: Enquiry for ${enquiry?.property?.title || "Property"}`);
+  const [message, setMessage]         = useState(
+    `Hi ${enquiry?.name},\n\nThank you for enquiring about "${enquiry?.property?.title || "the property"}".\n\n`
+  );
+  const [sending, setSending]         = useState(false);
+
+  const handleSend = async () => {
+    setSending(true);
+    try {
+      if (replyMethod === "email") {
+        const mailto = `mailto:${enquiry.email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(message)}`;
+        window.open(mailto, "_blank");
+        showToast("Email client opened successfully", "success");
+      } else if (replyMethod === "whatsapp") {
+        const phone = (enquiry.phone || "").replace(/\D/g, "");
+        const wa = `https://wa.me/${phone}?text=${encodeURIComponent(message)}`;
+        window.open(wa, "_blank");
+        showToast("WhatsApp opened successfully", "success");
+      } else if (replyMethod === "call") {
+        window.open(`tel:${enquiry.phone}`, "_self");
+        showToast("Initiating call...", "success");
+      }
+      onClose();
+    } catch {
+      showToast("Failed to open reply. Try again.", "error");
+    } finally {
+      setSending(false);
+    }
+  };
+
+  const methods = [
+    { id: "email",    label: "Email",    icon: "✉️", color: "blue",   available: !!enquiry?.email },
+    { id: "whatsapp", label: "WhatsApp", icon: "💬", color: "green",  available: !!enquiry?.phone },
+    { id: "call",     label: "Call",     icon: "📞", color: "purple", available: !!enquiry?.phone },
+  ];
+
+  const colorMap = {
+    blue:   { btn: "border-blue-500/40 bg-blue-600/20 text-blue-400",   active: "border-blue-500 bg-blue-600/30 text-blue-300 ring-1 ring-blue-500/40" },
+    green:  { btn: "border-emerald-500/40 bg-emerald-600/20 text-emerald-400", active: "border-emerald-500 bg-emerald-600/30 text-emerald-300 ring-1 ring-emerald-500/40" },
+    purple: { btn: "border-purple-500/40 bg-purple-600/20 text-purple-400", active: "border-purple-500 bg-purple-600/30 text-purple-300 ring-1 ring-purple-500/40" },
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+      <motion.div
+        className="bg-[#1a1a2e] border border-purple-500/30 rounded-3xl p-7 max-w-lg w-full shadow-2xl"
+        initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }}
+      >
+        {/* Header */}
+        <div className="flex items-center justify-between mb-5">
+          <div>
+            <p className="text-purple-400 text-xs font-bold uppercase tracking-widest mb-1">Reply To</p>
+            <h3 className="text-white font-black text-xl">{enquiry?.name}</h3>
+            <p className="text-gray-500 text-xs mt-0.5">
+              Re: {enquiry?.property?.title || "Property Enquiry"}
+            </p>
+          </div>
+          <button
+            onClick={onClose}
+            className="w-9 h-9 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 flex items-center justify-center text-gray-400 hover:text-white transition-all"
+          >
+            <X size={16} />
+          </button>
+        </div>
+
+        {/* Property context chip */}
+        {enquiry?.property?.title && (
+          <div className="flex items-center gap-2 mb-5 bg-purple-600/10 border border-purple-500/20 rounded-xl px-4 py-2.5">
+            <Building2 size={13} className="text-purple-400 flex-shrink-0" />
+            <div className="min-w-0">
+              <p className="text-white text-xs font-semibold truncate">{enquiry.property.title}</p>
+              <p className="text-gray-500 text-[10px]">{fmtPrice(enquiry.property?.price)} · {enquiry.property?.city}</p>
+            </div>
+          </div>
+        )}
+
+        {/* Reply Method */}
+        <div className="mb-5">
+          <p className="text-gray-400 text-xs font-semibold uppercase tracking-wider mb-3">Reply Via</p>
+          <div className="grid grid-cols-3 gap-2">
+            {methods.map(m => (
+              <button
+                key={m.id}
+                onClick={() => m.available && setReplyMethod(m.id)}
+                disabled={!m.available}
+                className={`flex flex-col items-center gap-1.5 py-3 rounded-2xl border text-xs font-semibold transition-all
+                  ${!m.available ? "opacity-30 cursor-not-allowed border-gray-700 bg-gray-800/20 text-gray-600" :
+                    replyMethod === m.id ? colorMap[m.color].active : colorMap[m.color].btn + " hover:opacity-90"
+                  }`}
+              >
+                <span className="text-lg">{m.icon}</span>
+                {m.label}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Subject (email only) */}
+        {replyMethod === "email" && (
+          <div className="mb-4">
+            <label className="text-gray-400 text-xs font-semibold uppercase tracking-wider block mb-2">Subject</label>
+            <input
+              className="w-full bg-[#252544] border border-purple-900/30 focus:border-purple-500 text-white placeholder-gray-500 rounded-xl px-4 py-2.5 text-sm outline-none transition-colors"
+              value={subject}
+              onChange={e => setSubject(e.target.value)}
+            />
+          </div>
+        )}
+
+        {/* Call — show number only */}
+        {replyMethod === "call" ? (
+          <div className="mb-5 bg-purple-600/10 border border-purple-500/20 rounded-2xl px-5 py-4 flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-purple-600/20 flex items-center justify-center flex-shrink-0">
+              <Phone size={18} className="text-purple-400" />
+            </div>
+            <div>
+              <p className="text-gray-400 text-xs">Calling</p>
+              <p className="text-white font-bold text-sm">{enquiry?.phone}</p>
+            </div>
+          </div>
+        ) : (
+          <div className="mb-5">
+            <label className="text-gray-400 text-xs font-semibold uppercase tracking-wider block mb-2">Message</label>
+            <textarea
+              rows={5}
+              className="w-full bg-[#252544] border border-purple-900/30 focus:border-purple-500 text-white placeholder-gray-500 rounded-xl px-4 py-3 text-sm outline-none transition-colors resize-none leading-relaxed"
+              value={message}
+              onChange={e => setMessage(e.target.value)}
+              placeholder="Type your reply..."
+            />
+            <p className="text-gray-600 text-xs mt-1 text-right">{message.length} chars</p>
+          </div>
+        )}
+
+        {/* Contact chips */}
+        <div className="flex flex-wrap gap-2 mb-5">
+          {enquiry?.email && (
+            <span className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-full bg-blue-600/10 text-blue-400 border border-blue-500/20">
+              <Mail size={10} /> {enquiry.email}
+            </span>
+          )}
+          {enquiry?.phone && (
+            <span className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-full bg-purple-600/10 text-purple-400 border border-purple-500/20">
+              <Phone size={10} /> {enquiry.phone}
+            </span>
+          )}
+        </div>
+
+        {/* Actions */}
+        <div className="flex gap-3">
+          <button
+            onClick={onClose}
+            className="flex-1 py-2.5 rounded-xl border border-purple-900/30 text-gray-400 hover:text-white hover:border-purple-500/50 text-sm font-semibold transition-all"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={handleSend}
+            disabled={sending || (replyMethod !== "call" && !message.trim())}
+            className="flex-1 py-2.5 rounded-xl bg-purple-600 hover:bg-purple-700 disabled:opacity-50 text-white text-sm font-semibold transition-all flex items-center justify-center gap-2"
+          >
+            {sending
+              ? <><div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />Sending...</>
+              : replyMethod === "call"
+                ? <><Phone size={14} />Call Now</>
+                : <><Send size={14} />Send Reply</>
+            }
+          </button>
+        </div>
+      </motion.div>
+    </div>
+  );
+}
+
 // ── Delete Confirm Modal ──────────────────────────────────────────────────────
 function DeleteConfirmModal({ enquiry, onConfirm, onCancel, loading }) {
   return (
@@ -150,18 +302,12 @@ function DeleteConfirmModal({ enquiry, onConfirm, onCancel, loading }) {
           ⚠️ This action cannot be undone
         </p>
         <div className="flex gap-3">
+          <button onClick={onCancel} className="flex-1 py-2.5 rounded-xl border border-purple-900/30 text-gray-400 hover:text-white hover:border-purple-500/50 text-sm font-semibold transition-all">Cancel</button>
           <button
-            onClick={onCancel}
-            className="flex-1 py-2.5 rounded-xl border border-purple-900/30 text-gray-400 hover:text-white hover:border-purple-500/50 text-sm font-semibold transition-all"
-          >Cancel</button>
-          <button
-            onClick={onConfirm}
-            disabled={loading}
+            onClick={onConfirm} disabled={loading}
             className="flex-1 py-2.5 rounded-xl bg-red-600 hover:bg-red-700 disabled:opacity-50 text-white text-sm font-semibold transition-all flex items-center justify-center gap-2"
           >
-            {loading
-              ? <><div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />Deleting...</>
-              : <><Trash2 size={14} />Delete</>}
+            {loading ? <><div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />Deleting...</> : <><Trash2 size={14} />Delete</>}
           </button>
         </div>
       </motion.div>
@@ -170,29 +316,21 @@ function DeleteConfirmModal({ enquiry, onConfirm, onCancel, loading }) {
 }
 
 // ── Enquiry Card ──────────────────────────────────────────────────────────────
-function EnquiryCard({ enquiry, onDelete, delay }) {
+function EnquiryCard({ enquiry, onDelete, onReply, delay }) {
   const [expanded, setExpanded] = useState(false);
 
   return (
     <motion.div
       className="bg-[#252544] border border-purple-900/30 hover:border-purple-500/40 rounded-2xl overflow-hidden transition-all duration-300 hover:shadow-xl"
-      initial={{ opacity: 0, y: 15 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.3, delay }}
+      initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3, delay }}
     >
-      {/* Top: Property + User + Actions */}
       <div className="p-5 grid grid-cols-1 md:grid-cols-3 gap-5">
 
         {/* Property */}
         <div className="flex gap-3">
           <div className="w-20 h-20 rounded-xl overflow-hidden bg-purple-900/30 flex-shrink-0">
             {enquiry.property?.thumbnail ? (
-              <img
-                src={enquiry.property.thumbnail}
-                alt={enquiry.property.title}
-                className="w-full h-full object-cover"
-                onError={e => { e.currentTarget.style.display = "none"; }}
-              />
+              <img src={enquiry.property.thumbnail} alt={enquiry.property.title} className="w-full h-full object-cover" onError={e => { e.currentTarget.style.display = "none"; }} />
             ) : (
               <div className="w-full h-full flex items-center justify-center text-2xl">🏠</div>
             )}
@@ -220,12 +358,10 @@ function EnquiryCard({ enquiry, onDelete, delay }) {
             <p className="text-white text-sm font-semibold">{enquiry.name}</p>
           </div>
           <div className="flex items-center gap-2 text-gray-400 text-xs">
-            <Mail size={11} className="text-purple-400 flex-shrink-0" />
-            <span className="truncate">{enquiry.email}</span>
+            <Mail size={11} className="text-purple-400 flex-shrink-0" /><span className="truncate">{enquiry.email}</span>
           </div>
           <div className="flex items-center gap-2 text-gray-400 text-xs">
-            <Phone size={11} className="text-purple-400 flex-shrink-0" />
-            <span>{enquiry.phone}</span>
+            <Phone size={11} className="text-purple-400 flex-shrink-0" /><span>{enquiry.phone}</span>
           </div>
         </div>
 
@@ -233,15 +369,22 @@ function EnquiryCard({ enquiry, onDelete, delay }) {
         <div className="flex flex-col justify-between items-start md:items-end gap-3">
           <div className="text-right">
             <div className="flex items-center gap-1.5 text-gray-400 text-xs md:justify-end">
-              <Calendar size={11} className="text-purple-400" />
-              <span>{fmtDate(enquiry.createdAt)}</span>
+              <Calendar size={11} className="text-purple-400" /><span>{fmtDate(enquiry.createdAt)}</span>
             </div>
             <p className="text-gray-600 text-[10px] mt-0.5 md:text-right">{fmtTime(enquiry.createdAt)}</p>
             <span className="inline-block mt-2 text-[10px] px-2.5 py-1 rounded-full bg-yellow-500/10 text-yellow-400 border border-yellow-500/20 font-semibold">
               New Enquiry
             </span>
           </div>
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
+            {/* Reply */}
+            <button
+              onClick={() => onReply(enquiry)}
+              className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-emerald-600/20 hover:bg-emerald-600/30 border border-emerald-500/20 hover:border-emerald-500/40 text-emerald-400 text-xs font-semibold transition-all"
+            >
+              <Reply size={12} /> Reply
+            </button>
+            {/* Message expand */}
             <button
               onClick={() => setExpanded(e => !e)}
               className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-blue-600/20 hover:bg-blue-600/30 border border-blue-500/20 hover:border-blue-500/40 text-blue-400 text-xs font-semibold transition-all"
@@ -250,12 +393,12 @@ function EnquiryCard({ enquiry, onDelete, delay }) {
               {expanded ? "Hide" : "Message"}
               {expanded ? <ChevronUp size={11} /> : <ChevronDown size={11} />}
             </button>
+            {/* Delete */}
             <button
               onClick={() => onDelete(enquiry)}
               className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-red-600/20 hover:bg-red-600/30 border border-red-500/20 hover:border-red-500/40 text-red-400 text-xs font-semibold transition-all"
             >
-              <Trash2 size={12} />
-              Delete
+              <Trash2 size={12} /> Delete
             </button>
           </div>
         </div>
@@ -265,11 +408,8 @@ function EnquiryCard({ enquiry, onDelete, delay }) {
       <AnimatePresence>
         {expanded && (
           <motion.div
-            initial={{ height: 0, opacity: 0 }}
-            animate={{ height: "auto", opacity: 1 }}
-            exit={{ height: 0, opacity: 0 }}
-            transition={{ duration: 0.25 }}
-            className="overflow-hidden"
+            initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }} transition={{ duration: 0.25 }} className="overflow-hidden"
           >
             <div className="px-5 pb-5 border-t border-purple-900/20 pt-4">
               <div className="flex items-center gap-2 mb-2">
@@ -289,17 +429,17 @@ function EnquiryCard({ enquiry, onDelete, delay }) {
 
 // ── Main ──────────────────────────────────────────────────────────────────────
 const AdminEnquiry = () => {
-  const [enquiries,     setEnquiries]     = useState([]);
-  const [filtered,      setFiltered]      = useState([]);
-  const [loading,       setLoading]       = useState(true);
-  const [refreshing,    setRefreshing]    = useState(false);
-  const [search,        setSearch]        = useState("");
-  const [sortBy,        setSortBy]        = useState("newest");
-  const [toast,         setToast]         = useState(null);
-  const [deleteTarget,  setDeleteTarget]  = useState(null);
-  const [deleting,      setDeleting]      = useState(false);
+  const [enquiries,    setEnquiries]    = useState([]);
+  const [filtered,     setFiltered]     = useState([]);
+  const [loading,      setLoading]      = useState(true);
+  const [refreshing,   setRefreshing]   = useState(false);
+  const [search,       setSearch]       = useState("");
+  const [sortBy,       setSortBy]       = useState("newest");
+  const [toast,        setToast]        = useState(null);
+  const [deleteTarget, setDeleteTarget] = useState(null);
+  const [replyTarget,  setReplyTarget]  = useState(null);  // ← NEW
+  const [deleting,     setDeleting]     = useState(false);
 
-  // ── Fetch ──
   const fetchEnquiries = async (isRefresh = false) => {
     try {
       isRefresh ? setRefreshing(true) : setLoading(true);
@@ -316,7 +456,6 @@ const AdminEnquiry = () => {
 
   useEffect(() => { fetchEnquiries(); }, []);
 
-  // ── Filter + Sort ──
   useEffect(() => {
     let result = [...enquiries];
     if (search.trim()) result = result.filter(e =>
@@ -325,15 +464,14 @@ const AdminEnquiry = () => {
       e.property?.title?.toLowerCase().includes(search.toLowerCase()) ||
       e.property?.city?.toLowerCase().includes(search.toLowerCase())
     );
-    if (sortBy === "newest")   result.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-    if (sortBy === "oldest")   result.sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
-    if (sortBy === "name-az")  result.sort((a, b) => a.name?.localeCompare(b.name));
+    if (sortBy === "newest")  result.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+    if (sortBy === "oldest")  result.sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
+    if (sortBy === "name-az") result.sort((a, b) => a.name?.localeCompare(b.name));
     setFiltered(result);
   }, [enquiries, search, sortBy]);
 
   const showToast = (msg, type = "success") => setToast({ msg, type });
 
-  // ── Delete ──
   const handleDeleteConfirm = async () => {
     if (!deleteTarget) return;
     setDeleting(true);
@@ -343,14 +481,12 @@ const AdminEnquiry = () => {
       showToast("Enquiry deleted successfully");
       setDeleteTarget(null);
     } catch (error) {
-      console.error("Delete error", error);
       showToast("Failed to delete enquiry", "error");
     } finally {
       setDeleting(false);
     }
   };
 
-  // ── Stats ──
   const thisMonth = enquiries.filter(e => {
     const d = new Date(e.createdAt), now = new Date();
     return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
@@ -358,12 +494,9 @@ const AdminEnquiry = () => {
 
   const uniqueProps = new Set(enquiries.map(e => e.property?._id).filter(Boolean)).size;
 
-  // ── Skeleton Loading ──
   if (loading) return (
     <div className="min-h-screen bg-[#1a1a2e] px-4 sm:px-6 md:px-8 py-6 md:py-10">
       <div className="max-w-7xl mx-auto space-y-6">
-
-        {/* Header skeleton */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div className="space-y-2">
             <SkeletonBox className="h-3 w-24 rounded-full" />
@@ -372,27 +505,18 @@ const AdminEnquiry = () => {
           </div>
           <SkeletonBox className="w-10 h-10 rounded-xl self-start sm:self-auto" />
         </div>
-
-        {/* Mini stats skeleton */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
           {[...Array(4)].map((_, i) => <SkeletonMiniStat key={i} />)}
         </div>
-
-        {/* Search bar skeleton */}
         <div className="bg-[#252544] border border-purple-900/20 rounded-2xl p-4">
           <div className="flex flex-col sm:flex-row gap-3">
             <SkeletonBox className="h-10 flex-1 rounded-xl" />
             <SkeletonBox className="h-10 w-36 rounded-xl" />
           </div>
         </div>
-
-        {/* Enquiry card skeletons */}
         <div className="space-y-4">
-          {[...Array(4)].map((_, i) => (
-            <SkeletonEnquiryCard key={i} delay={i * 0.07} />
-          ))}
+          {[...Array(4)].map((_, i) => <SkeletonEnquiryCard key={i} delay={i * 0.07} />)}
         </div>
-
       </div>
     </div>
   );
@@ -401,7 +525,7 @@ const AdminEnquiry = () => {
     <div className="min-h-screen bg-[#1a1a2e] px-4 sm:px-6 md:px-8 py-6 md:py-10">
       <div className="max-w-7xl mx-auto space-y-6">
 
-        {/* ── Header ── */}
+        {/* Header */}
         <motion.div
           className="flex flex-col sm:flex-row sm:items-center justify-between gap-4"
           initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }}
@@ -421,24 +545,23 @@ const AdminEnquiry = () => {
           </button>
         </motion.div>
 
-        {/* ── Mini Stats ── */}
+        {/* Mini Stats */}
         <motion.div
           className="grid grid-cols-2 sm:grid-cols-4 gap-4"
           initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4, delay: 0.1 }}
         >
-          <MiniStat icon={<ClipboardList size={16} />} label="Total Enquiries"   value={enquiries.length} color="purple" />
-          <MiniStat icon={<Calendar size={16} />}      label="This Month"        value={thisMonth}        color="yellow" />
-          <MiniStat icon={<Building2 size={16} />}     label="Properties Enquired" value={uniqueProps}    color="blue"   />
-          <MiniStat icon={<MessageSquare size={16} />} label="With Message"      value={enquiries.filter(e => e.message).length} color="green" />
+          <MiniStat icon={<ClipboardList size={16} />} label="Total Enquiries"     value={enquiries.length} color="purple" />
+          <MiniStat icon={<Calendar size={16} />}      label="This Month"          value={thisMonth}        color="yellow" />
+          <MiniStat icon={<Building2 size={16} />}     label="Properties Enquired" value={uniqueProps}      color="blue"   />
+          <MiniStat icon={<MessageSquare size={16} />} label="With Message"        value={enquiries.filter(e => e.message).length} color="green" />
         </motion.div>
 
-        {/* ── Search + Filters ── */}
+        {/* Search + Filters */}
         <motion.div
           className="bg-[#252544] border border-purple-900/30 rounded-2xl p-4"
           initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4, delay: 0.15 }}
         >
           <div className="flex flex-col sm:flex-row gap-3">
-            {/* Search */}
             <div className="relative flex-1">
               <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" />
               <input
@@ -453,20 +576,15 @@ const AdminEnquiry = () => {
                 </button>
               )}
             </div>
-
-            {/* Sort */}
             <select
               className="bg-[#1a1a2e] border border-purple-900/30 focus:border-purple-500 text-gray-300 rounded-xl px-4 py-2.5 text-sm outline-none cursor-pointer"
-              value={sortBy}
-              onChange={e => setSortBy(e.target.value)}
+              value={sortBy} onChange={e => setSortBy(e.target.value)}
             >
               <option value="newest">Newest First</option>
               <option value="oldest">Oldest First</option>
               <option value="name-az">Name A → Z</option>
             </select>
           </div>
-
-          {/* Active filters */}
           {search && (
             <div className="flex items-center gap-2 mt-3 flex-wrap">
               <span className="text-gray-500 text-xs">Filters:</span>
@@ -478,7 +596,7 @@ const AdminEnquiry = () => {
           )}
         </motion.div>
 
-        {/* ── Enquiries ── */}
+        {/* Enquiries */}
         {filtered.length === 0 ? (
           <motion.div
             className="bg-[#252544] border border-purple-900/30 rounded-2xl p-16 text-center"
@@ -486,9 +604,7 @@ const AdminEnquiry = () => {
           >
             <div className="text-5xl mb-4">📋</div>
             <p className="text-white font-bold text-lg mb-2">No enquiries found</p>
-            <p className="text-gray-400 text-sm">
-              {search ? "Try adjusting your search" : "No enquiries received yet"}
-            </p>
+            <p className="text-gray-400 text-sm">{search ? "Try adjusting your search" : "No enquiries received yet"}</p>
           </motion.div>
         ) : (
           <div className="space-y-4">
@@ -497,14 +613,22 @@ const AdminEnquiry = () => {
                 key={enquiry._id}
                 enquiry={enquiry}
                 onDelete={setDeleteTarget}
+                onReply={setReplyTarget}
                 delay={i * 0.04}
               />
             ))}
           </div>
         )}
 
-        {/* ── Delete Confirm Modal ── */}
+        {/* Modals */}
         <AnimatePresence>
+          {replyTarget && (
+            <ReplyModal
+              enquiry={replyTarget}
+              onClose={() => setReplyTarget(null)}
+              showToast={showToast}
+            />
+          )}
           {deleteTarget && (
             <DeleteConfirmModal
               enquiry={deleteTarget}
@@ -515,7 +639,7 @@ const AdminEnquiry = () => {
           )}
         </AnimatePresence>
 
-        {/* ── Toast ── */}
+        {/* Toast */}
         <AnimatePresence>
           {toast && <Toast msg={toast.msg} type={toast.type} onClose={() => setToast(null)} />}
         </AnimatePresence>

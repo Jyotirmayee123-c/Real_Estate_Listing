@@ -13,6 +13,8 @@ const Sidebar = () => {
     { to: '/admin/contact',  label: 'Contacts'  },
     { to: '/admin/property', label: 'Property'  },
     { to: '/admin/enquiry',  label: 'Enquiry'   },
+    { to: '/admin/review',  label: 'Review'   },
+    { to: '/admin/payment',  label: 'Payment'   },
   ];
 
   const isActive = (path) =>

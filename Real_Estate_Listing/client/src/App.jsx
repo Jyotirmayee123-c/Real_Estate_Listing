@@ -1,6 +1,5 @@
-
 import './App.css'
-import { Routes, Route, Navigate ,useLocation} from 'react-router-dom';
+import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { useEffect } from 'react';
 
 // Layouts
@@ -26,61 +25,65 @@ import Properties from './pages/public/Properties';
 import PropertyDetails from './pages/public/PropertyDetails';
 import AdminEnquiry from './pages/admin/AdminEnquiry';
 import AdminUsers from './pages/admin/AdminUsers';
+import AdminReview from './pages/admin/AdminReview';
+import AdminPayment from './pages/admin/AdminPayment';
 
 
-  function App() {
-    const { pathname } = useLocation();
-    useEffect(() => { window.scrollTo({ top: 0, behavior: 'instant' }); }, [pathname]);
+function App() {
+  const { pathname } = useLocation();
+  useEffect(() => { window.scrollTo({ top: 0, behavior: 'instant' }); }, [pathname]);
+
   return (
     <Routes>
       {/* Public Routes with Main Layout */}
       <Route path="/" element={<MainLayout />}>
         <Route index element={<Home />} />
-        
         <Route path="about" element={<About />} />
         <Route path="services" element={<Services />} />
         <Route path="contacts" element={<Contacts />} />
         <Route path="properties" element={<Properties />} />
         <Route path="property/:id" element={<PropertyDetails />} />
-        
+
         {/* Only accessible if NOT logged in */}
-        <Route 
-          path="login" 
+        <Route
+          path="login"
           element={
             <PublicRoute>
               <Login />
             </PublicRoute>
-          } 
+          }
         />
-        <Route 
-          path="register" 
+        <Route
+          path="register"
           element={
             <PublicRoute>
               <Register />
             </PublicRoute>
-          } 
+          }
         />
-        
+
         {/* Only accessible if logged in */}
-        <Route 
-          path="profile" 
+        <Route
+          path="profile"
           element={
             <ProtectedRoute>
               <Profile />
             </ProtectedRoute>
-          } 
+          }
         />
       </Route>
 
       {/* Admin Routes with Admin Layout */}
       <Route path="/admin" element={<AdminLayout />}>
         <Route index element={<AdminDashboard />} />
-        <Route path='users' element={<AdminUsers />} />
-        <Route path='contact' element={<AdminContact />} />
-        <Route path='property' element={<AdminProperty />} />
-        <Route path='enquiry' element={<AdminEnquiry />} />
+        <Route path="users" element={<AdminUsers />} />
+        <Route path="contact" element={<AdminContact />} />
+        <Route path="property" element={<AdminProperty />} />
+        <Route path="enquiry" element={<AdminEnquiry />} />
+        <Route path="review" element={<AdminReview />} />
+        <Route path="payment" element={<AdminPayment />} />
       </Route>
-      
+
       {/* Fallback */}
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>

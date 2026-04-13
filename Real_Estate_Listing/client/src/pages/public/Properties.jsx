@@ -6,21 +6,47 @@ import api from "../../services/api";
 import Footer from "../../components/Footer";
 
 // ── Normalize suitableFor: always returns array of trimmed lowercase strings ──
-// Handles: string "Bachelor,Family", array ["Bachelor","Family"],
-//          single string "bachelor", nested arrays, numbers etc.
+// Handles ALL formats: "Bachelor,Family", ["Bachelor","Family"], "bachelor", nested arrays
 const normalizeSuitableFor = (val) => {
   if (!val) return [];
+
+  // If it's an array, flatten and split each element by comma
   if (Array.isArray(val)) {
     return val
-      .flatMap((v) =>
-        typeof v === "string" ? v.split(",").map((s) => s.trim().toLowerCase()) : []
-      )
+      .flatMap((v) => {
+        if (typeof v === "string") return v.split(",").map((s) => s.trim().toLowerCase());
+        if (Array.isArray(v))      return v.flatMap((s) => typeof s === "string" ? s.split(",").map((x) => x.trim().toLowerCase()) : []);
+        return [];
+      })
       .filter(Boolean);
   }
+
+  // If it's a plain string, split by comma
   if (typeof val === "string") {
     return val.split(",").map((s) => s.trim().toLowerCase()).filter(Boolean);
   }
+
   return [];
+};
+
+// ── Match helper: checks if a property's suitableFor tags include the target ──
+const matchesSuitableFor = (propertyVal, target) => {
+  if (!target) return true; // no filter active → show all
+  const tags = normalizeSuitableFor(propertyVal);
+  const t    = target.toLowerCase().trim();
+
+  if (t === "others") {
+    // "Others" = anything that is NOT bachelor or family
+    return tags.some((tag) => tag !== "bachelor" && tag !== "family");
+  }
+
+  // Direct / partial match for bachelor, family
+  return tags.some(
+    (tag) =>
+      tag === t ||
+      tag.startsWith(t) ||   // "bachelor's" starts with "bachelor"
+      t.startsWith(tag)      // "fam" matches "family" (unlikely but safe)
+  );
 };
 
 const getSuitableLabel = (val) => {
@@ -40,19 +66,19 @@ const PURPOSE_BUTTONS = [
 ];
 
 const SUITABLE_BUTTONS = [
-  { value: "bachelor", label: "🧑 Bachelor"  },
-  { value: "family",   label: "👨‍👩‍👧‍👦 Family"  },
-  { value: "others",   label: "🏘️ Others"    },
+  { value: "bachelor", label: "🧑 Bachelor"      },
+  { value: "family",   label: "👨‍👩‍👧‍👦 Family"      },
+  { value: "others",   label: "🏘️ Others"        },
 ];
 
 const Properties = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
 
-  const [properties, setProperties] = useState([]);
-  const [filtered, setFiltered]     = useState([]);
-  const [loading, setLoading]       = useState(true);
-  const [showAdvanced, setShowAdvanced] = useState(false);
+  const [properties,    setProperties]    = useState([]);
+  const [filtered,      setFiltered]      = useState([]);
+  const [loading,       setLoading]       = useState(true);
+  const [showAdvanced,  setShowAdvanced]  = useState(false);
 
   const urlCategory    = searchParams.get("category") || "";
   const initialPurpose = ["buy", "rent", "sell"].includes(urlCategory.toLowerCase()) ? urlCategory.toLowerCase() : "";
@@ -80,9 +106,10 @@ const Properties = () => {
       else if (Array.isArray(res.data?.data?.properties)) data = res.data.data.properties;
       else console.warn("Unexpected API response shape:", res.data);
 
-      // Debug: log unique suitableFor values so you can verify field format
+      // Debug: log all unique suitableFor raw values to console
       const unique = [...new Set(data.map((p) => JSON.stringify(p.suitableFor)))];
-      console.log(`Fetched ${data.length} properties. suitableFor samples:`, unique.slice(0, 8));
+      console.log(`✅ Fetched ${data.length} properties`);
+      console.log("🏷️ Unique suitableFor raw values:", unique);
 
       setProperties(data);
     } catch (error) {
@@ -109,7 +136,7 @@ const Properties = () => {
       );
     }
 
-    // Purpose: buy / rent / sell
+    // Purpose
     if (purpose) {
       result = result.filter((p) => {
         const val = (p.purpose || p.propertyPurpose || p.listingType || "").toLowerCase().trim();
@@ -124,24 +151,9 @@ const Properties = () => {
       );
     }
 
-    // ── FIX: suitableFor filter with robust normalization ──
+    // ── Suitable For — using robust matchesSuitableFor helper ──
     if (suitableFor) {
-      const target = suitableFor.toLowerCase().trim();
-      result = result.filter((p) => {
-        const tags = normalizeSuitableFor(p.suitableFor);
-
-        // Exact match first
-        if (tags.includes(target)) return true;
-
-        // Fallback: partial match (handles "bachelor's", "bachelors", etc.)
-        if (target === "others") {
-          // "others" matches anything that's NOT bachelor or family
-          return tags.length > 0
-            ? tags.some((t) => t !== "bachelor" && t !== "family")
-            : false;
-        }
-        return tags.some((t) => t.includes(target) || target.includes(t));
-      });
+      result = result.filter((p) => matchesSuitableFor(p.suitableFor, suitableFor));
     }
 
     // Furnishing
@@ -172,9 +184,9 @@ const Properties = () => {
     setSuitableFor(""); setMinPrice(""); setMaxPrice(""); setMinBeds(""); setFurnishing("");
   };
 
-  const hasFilters = search || category || purpose || sortBy || suitableFor || minPrice || maxPrice || minBeds || furnishing;
+  const hasFilters          = search || category || purpose || sortBy || suitableFor || minPrice || maxPrice || minBeds || furnishing;
   const activeAdvancedCount = [suitableFor, minPrice, maxPrice, minBeds, furnishing].filter(Boolean).length;
-  const purposeLabel = PURPOSE_BUTTONS.find((b) => b.val === purpose);
+  const purposeLabel        = PURPOSE_BUTTONS.find((b) => b.val === purpose);
 
   const pageTitle =
     purpose === "buy"  ? <>Buy <span className="text-purple-400">Properties</span></> :
@@ -284,13 +296,10 @@ const Properties = () => {
                         <button
                           key={value}
                           type="button"
-                          onClick={() => {
-                            // Toggle: clicking same button again clears it
-                            setSuitableFor((prev) => (prev === value ? "" : value));
-                          }}
+                          onClick={() => setSuitableFor((prev) => (prev === value ? "" : value))}
                           className={`flex-1 py-2 rounded-xl border text-xs font-semibold transition-all duration-200
                             ${suitableFor === value
-                              ? "bg-purple-600/30 border-purple-500/50 text-purple-300"
+                              ? "bg-purple-600/30 border-purple-500/50 text-purple-300 shadow-md shadow-purple-900/30"
                               : "bg-white/[0.04] border-white/10 text-white/50 hover:border-purple-500/30 hover:text-white/75"}`}
                         >
                           {label}
@@ -306,7 +315,9 @@ const Properties = () => {
                       {["1", "2", "3", "4"].map((n) => (
                         <button key={n} type="button" onClick={() => setMinBeds(minBeds === n ? "" : n)}
                           className={`flex-1 py-2 rounded-xl border text-xs font-bold transition-all duration-200
-                            ${minBeds === n ? "bg-purple-600/30 border-purple-500/50 text-purple-300" : "bg-white/[0.04] border-white/10 text-white/50 hover:border-purple-500/30 hover:text-white/75"}`}>
+                            ${minBeds === n
+                              ? "bg-purple-600/30 border-purple-500/50 text-purple-300"
+                              : "bg-white/[0.04] border-white/10 text-white/50 hover:border-purple-500/30 hover:text-white/75"}`}>
                           {n}+
                         </button>
                       ))}
@@ -324,19 +335,25 @@ const Properties = () => {
                     </div>
                   </div>
 
-                  {/* Furnishing */}
+                  {/* Furnishing
                   <div className="space-y-2">
                     <p className="text-white/40 text-xs font-medium uppercase tracking-wider">Furnishing</p>
                     <div className="flex gap-2 flex-wrap">
-                      {[{ value: "furnished", label: "✅ Furnished" }, { value: "semi-furnished", label: "🪑 Semi" }, { value: "unfurnished", label: "🏠 Unfurnished" }].map(({ value, label }) => (
+                      {[
+                        { value: "furnished",      label: "✅ Furnished"    },
+                        { value: "semi-furnished", label: "🪑 Semi"         },
+                        { value: "unfurnished",    label: "🏠 Unfurnished"  },
+                      ].map(({ value, label }) => (
                         <button key={value} type="button" onClick={() => setFurnishing(furnishing === value ? "" : value)}
                           className={`flex-1 py-2 rounded-xl border text-xs font-semibold transition-all duration-200
-                            ${furnishing === value ? "bg-purple-600/30 border-purple-500/50 text-purple-300" : "bg-white/[0.04] border-white/10 text-white/50 hover:border-purple-500/30 hover:text-white/75"}`}>
+                            ${furnishing === value
+                              ? "bg-purple-600/30 border-purple-500/50 text-purple-300"
+                              : "bg-white/[0.04] border-white/10 text-white/50 hover:border-purple-500/30 hover:text-white/75"}`}>
                           {label}
                         </button>
                       ))}
                     </div>
-                  </div>
+                  </div> */}
 
                 </div>
               </motion.div>
@@ -393,6 +410,11 @@ const Properties = () => {
         {!loading && (
           <p className="mt-5 text-white/35 text-sm">
             {filtered.length} {filtered.length === 1 ? "property" : "properties"} found
+            {suitableFor && (
+              <span className="ml-2 text-purple-400 font-medium">
+                · {getSuitableLabel(suitableFor)}
+              </span>
+            )}
           </p>
         )}
       </div>
@@ -422,7 +444,11 @@ const Properties = () => {
             <h3 className="text-white text-xl font-semibold mb-2" style={{ fontFamily: "'Playfair Display', serif" }}>
               No properties found
             </h3>
-            <p className="text-white/40 text-sm mb-6">Try adjusting your filters or search term.</p>
+            <p className="text-white/40 text-sm mb-6">
+              {suitableFor
+                ? `No properties marked as suitable for ${getSuitableLabel(suitableFor)}. Try clearing this filter.`
+                : "Try adjusting your filters or search term."}
+            </p>
             <button type="button" onClick={clearFilters}
               className="bg-purple-600 hover:bg-purple-700 text-white px-6 py-2.5 rounded-full text-sm font-medium transition">
               Clear Filters

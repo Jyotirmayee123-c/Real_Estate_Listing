@@ -23,18 +23,22 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 // Routes
-const authRoutes = require("./route/authRoutes");
-const userRoutes = require("./route/userRoutes");
-const contactRoutes = require("./route/contactRoutes");
+const authRoutes     = require("./route/authRoutes");
+const userRoutes     = require("./route/userRoutes");
+const contactRoutes  = require("./route/contactRoutes");
 const propertyRoutes = require("./route/propertyRoutes");
-const enquiryRoutes = require("./route/enquiry");
+const enquiryRoutes  = require("./route/enquiry");
+const paymentRoutes  = require("./route/paymentRoutes");
+const reviewRoutes   = require("./route/reviewRoutes");
 
 // Mount Routes
-app.use("/api/auth", authRoutes);
-app.use("/api/users", userRoutes);       // ← AdminUsers.jsx DELETE /api/users/:id
-app.use("/api/contact", contactRoutes);
+app.use("/api/auth",     authRoutes);
+app.use("/api/users",    userRoutes);
+app.use("/api/contact",  contactRoutes);
 app.use("/api/property", propertyRoutes);
-app.use("/api/enquiry", enquiryRoutes);
+app.use("/api/enquiry",  enquiryRoutes);
+app.use("/api/payment",  paymentRoutes);
+app.use("/api/review",   reviewRoutes);
 
 app.get("/", (req, res) => {
   res.send("API is running... ✅");

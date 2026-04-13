@@ -5,7 +5,7 @@ import {
   MessageSquare, Search, Trash2, RefreshCw,
   X, CheckCircle, AlertTriangle, Mail, Phone,
   Calendar, Eye, ChevronDown, ChevronUp,
-  Home, Users, Clock, Filter,
+  Home, Users, Clock, Filter, Send, Reply,
 } from "lucide-react";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -78,6 +78,173 @@ function Toast({ msg, type, onClose }) {
   );
 }
 
+// ── Reply Modal ───────────────────────────────────────────────────────────────
+function ReplyModal({ contact, onClose, showToast }) {
+  const [replyMethod, setReplyMethod] = useState("email");
+  const [subject, setSubject]         = useState(`Re: Your Property Enquiry`);
+  const [message, setMessage]         = useState(
+    `Hi ${contact?.fullName},\n\nThank you for reaching out to us regarding your property enquiry.\n\n`
+  );
+  const [sending, setSending]         = useState(false);
+
+  const handleSend = async () => {
+    if (!message.trim()) return;
+    setSending(true);
+    try {
+      if (replyMethod === "email") {
+        // Opens default mail client
+        const mailto = `mailto:${contact.email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(message)}`;
+        window.open(mailto, "_blank");
+        showToast("Email client opened successfully", "success");
+      } else if (replyMethod === "whatsapp") {
+        const phone = (contact.whatsApp || contact.phone || "").replace(/\D/g, "");
+        const wa = `https://wa.me/${phone}?text=${encodeURIComponent(message)}`;
+        window.open(wa, "_blank");
+        showToast("WhatsApp opened successfully", "success");
+      } else if (replyMethod === "call") {
+        window.open(`tel:${contact.phone}`, "_self");
+        showToast("Initiating call...", "success");
+      }
+      onClose();
+    } catch (err) {
+      showToast("Failed to open reply. Try again.", "error");
+    } finally {
+      setSending(false);
+    }
+  };
+
+  const methods = [
+    { id: "email",     label: "Email",     icon: "✉️",  color: "blue",   available: !!contact?.email },
+    { id: "whatsapp",  label: "WhatsApp",  icon: "💬",  color: "green",  available: !!(contact?.whatsApp || contact?.phone) },
+    { id: "call",      label: "Call",      icon: "📞",  color: "purple", available: !!contact?.phone },
+  ];
+
+  const colorMap = {
+    blue:   { btn: "border-blue-500/40 bg-blue-600/20 text-blue-400",   active: "border-blue-500 bg-blue-600/30 text-blue-300 ring-1 ring-blue-500/40" },
+    green:  { btn: "border-emerald-500/40 bg-emerald-600/20 text-emerald-400", active: "border-emerald-500 bg-emerald-600/30 text-emerald-300 ring-1 ring-emerald-500/40" },
+    purple: { btn: "border-purple-500/40 bg-purple-600/20 text-purple-400", active: "border-purple-500 bg-purple-600/30 text-purple-300 ring-1 ring-purple-500/40" },
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+      <motion.div
+        className="bg-[#1a1a2e] border border-purple-500/30 rounded-3xl p-7 max-w-lg w-full shadow-2xl"
+        initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }}
+      >
+        {/* Header */}
+        <div className="flex items-center justify-between mb-6">
+          <div>
+            <p className="text-purple-400 text-xs font-bold uppercase tracking-widest mb-1">Reply To</p>
+            <h3 className="text-white font-black text-xl">{contact?.fullName}</h3>
+            <p className="text-gray-500 text-xs mt-0.5">{contact?.email}</p>
+          </div>
+          <button
+            onClick={onClose}
+            className="w-9 h-9 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 flex items-center justify-center text-gray-400 hover:text-white transition-all"
+          >
+            <X size={16} />
+          </button>
+        </div>
+
+        {/* Reply Method Selector */}
+        <div className="mb-5">
+          <p className="text-gray-400 text-xs font-semibold uppercase tracking-wider mb-3">Reply Via</p>
+          <div className="grid grid-cols-3 gap-2">
+            {methods.map(m => (
+              <button
+                key={m.id}
+                onClick={() => m.available && setReplyMethod(m.id)}
+                disabled={!m.available}
+                className={`flex flex-col items-center gap-1.5 py-3 rounded-2xl border text-xs font-semibold transition-all
+                  ${!m.available ? "opacity-30 cursor-not-allowed border-gray-700 bg-gray-800/20 text-gray-600" :
+                    replyMethod === m.id ? colorMap[m.color].active : colorMap[m.color].btn + " hover:opacity-90"
+                  }`}
+              >
+                <span className="text-lg">{m.icon}</span>
+                {m.label}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Email subject (only for email) */}
+        {replyMethod === "email" && (
+          <div className="mb-4">
+            <label className="text-gray-400 text-xs font-semibold uppercase tracking-wider block mb-2">Subject</label>
+            <input
+              className="w-full bg-[#252544] border border-purple-900/30 focus:border-purple-500 text-white placeholder-gray-500 rounded-xl px-4 py-2.5 text-sm outline-none transition-colors"
+              value={subject}
+              onChange={e => setSubject(e.target.value)}
+            />
+          </div>
+        )}
+
+        {/* Call — show number, no message box */}
+        {replyMethod === "call" ? (
+          <div className="mb-5 bg-purple-600/10 border border-purple-500/20 rounded-2xl px-5 py-4 flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-purple-600/20 flex items-center justify-center flex-shrink-0">
+              <Phone size={18} className="text-purple-400" />
+            </div>
+            <div>
+              <p className="text-gray-400 text-xs">Calling</p>
+              <p className="text-white font-bold text-sm">{contact?.phone}</p>
+            </div>
+          </div>
+        ) : (
+          /* Message Box */
+          <div className="mb-5">
+            <label className="text-gray-400 text-xs font-semibold uppercase tracking-wider block mb-2">Message</label>
+            <textarea
+              rows={5}
+              className="w-full bg-[#252544] border border-purple-900/30 focus:border-purple-500 text-white placeholder-gray-500 rounded-xl px-4 py-3 text-sm outline-none transition-colors resize-none leading-relaxed"
+              value={message}
+              onChange={e => setMessage(e.target.value)}
+              placeholder="Type your reply..."
+            />
+            <p className="text-gray-600 text-xs mt-1 text-right">{message.length} chars</p>
+          </div>
+        )}
+
+        {/* Contact info chips */}
+        <div className="flex flex-wrap gap-2 mb-5">
+          {contact?.email && (
+            <span className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-full bg-blue-600/10 text-blue-400 border border-blue-500/20">
+              <Mail size={10} /> {contact.email}
+            </span>
+          )}
+          {contact?.phone && (
+            <span className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-full bg-purple-600/10 text-purple-400 border border-purple-500/20">
+              <Phone size={10} /> {contact.phone}
+            </span>
+          )}
+        </div>
+
+        {/* Actions */}
+        <div className="flex gap-3">
+          <button
+            onClick={onClose}
+            className="flex-1 py-2.5 rounded-xl border border-purple-900/30 text-gray-400 hover:text-white hover:border-purple-500/50 text-sm font-semibold transition-all"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={handleSend}
+            disabled={sending || (replyMethod !== "call" && !message.trim())}
+            className="flex-1 py-2.5 rounded-xl bg-purple-600 hover:bg-purple-700 disabled:opacity-50 text-white text-sm font-semibold transition-all flex items-center justify-center gap-2"
+          >
+            {sending
+              ? <><div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />Sending...</>
+              : replyMethod === "call"
+                ? <><Phone size={14} />Call Now</>
+                : <><Send size={14} />Send Reply</>
+            }
+          </button>
+        </div>
+      </motion.div>
+    </div>
+  );
+}
+
 // ── Delete Confirm Modal ──────────────────────────────────────────────────────
 function DeleteConfirmModal({ contact, onConfirm, onCancel, loading }) {
   return (
@@ -138,12 +305,11 @@ function ViewModal({ contact, onClose }) {
         </div>
 
         <div className="space-y-4">
-          {/* Contact Info */}
           <div className="bg-[#252544] border border-purple-900/30 rounded-2xl p-5 space-y-3">
             <p className="text-purple-400 text-[10px] font-bold uppercase tracking-widest mb-3">Contact Info</p>
             {[
-              { icon: <Mail size={13} />, label: "Email",  value: contact.email },
-              { icon: <Phone size={13} />, label: "Phone", value: contact.phone },
+              { icon: <Mail size={13} />, label: "Email",     value: contact.email },
+              { icon: <Phone size={13} />, label: "Phone",    value: contact.phone },
               { icon: <MessageSquare size={13} />, label: "WhatsApp", value: contact.whatsApp || "—" },
             ].map((row, i) => (
               <div key={i} className="flex items-center gap-3">
@@ -156,7 +322,6 @@ function ViewModal({ contact, onClose }) {
             ))}
           </div>
 
-          {/* Property Info */}
           <div className="bg-[#252544] border border-purple-900/30 rounded-2xl p-5">
             <p className="text-purple-400 text-[10px] font-bold uppercase tracking-widest mb-3">Property Interest</p>
             <div className="grid grid-cols-2 gap-3">
@@ -174,7 +339,6 @@ function ViewModal({ contact, onClose }) {
             </div>
           </div>
 
-          {/* Description */}
           {contact.description && (
             <div className="bg-[#252544] border border-purple-900/30 rounded-2xl p-5">
               <p className="text-purple-400 text-[10px] font-bold uppercase tracking-widest mb-2">Message</p>
@@ -182,7 +346,6 @@ function ViewModal({ contact, onClose }) {
             </div>
           )}
 
-          {/* Date */}
           <div className="flex items-center gap-2 text-gray-500 text-xs">
             <Calendar size={12} />
             Received on {fmtDate(contact.createdAt)} at {fmtTime(contact.createdAt)}
@@ -194,7 +357,7 @@ function ViewModal({ contact, onClose }) {
 }
 
 // ── Contact Card ──────────────────────────────────────────────────────────────
-function ContactCard({ contact, onDelete, onView, delay }) {
+function ContactCard({ contact, onDelete, onView, onReply, delay }) {
   const [expanded, setExpanded] = useState(false);
 
   return (
@@ -240,12 +403,8 @@ function ContactCard({ contact, onDelete, onView, delay }) {
             )}
           </div>
           <div className="text-gray-500 text-xs space-y-0.5">
-            {contact.preferredContactMethod && (
-              <p>{methodBadge(contact.preferredContactMethod)}</p>
-            )}
-            {contact.bestTimeToContact && (
-              <p>{timeBadge(contact.bestTimeToContact)}</p>
-            )}
+            {contact.preferredContactMethod && <p>{methodBadge(contact.preferredContactMethod)}</p>}
+            {contact.bestTimeToContact && <p>{timeBadge(contact.bestTimeToContact)}</p>}
           </div>
         </div>
 
@@ -258,21 +417,31 @@ function ContactCard({ contact, onDelete, onView, delay }) {
             </div>
             <p className="text-gray-600 text-[10px] mt-0.5">{fmtTime(contact.createdAt)}</p>
           </div>
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
+            {/* Reply */}
+            <button
+              onClick={() => onReply(contact)}
+              className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-emerald-600/20 hover:bg-emerald-600/30 border border-emerald-500/20 hover:border-emerald-500/40 text-emerald-400 text-xs font-semibold transition-all"
+            >
+              <Reply size={12} /> Reply
+            </button>
+            {/* View */}
             <button
               onClick={() => onView(contact)}
               className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-blue-600/20 hover:bg-blue-600/30 border border-blue-500/20 hover:border-blue-500/40 text-blue-400 text-xs font-semibold transition-all"
             >
               <Eye size={12} /> View
             </button>
+            {/* Message expand */}
             <button
               onClick={() => setExpanded(e => !e)}
               className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-purple-600/20 hover:bg-purple-600/30 border border-purple-500/20 hover:border-purple-500/40 text-purple-400 text-xs font-semibold transition-all"
             >
               <MessageSquare size={12} />
-              {expanded ? "Hide" : "Message"}
+              {expanded ? "Hide" : "Msg"}
               {expanded ? <ChevronUp size={11} /> : <ChevronDown size={11} />}
             </button>
+            {/* Delete */}
             <button
               onClick={() => onDelete(contact)}
               className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-red-600/20 hover:bg-red-600/30 border border-red-500/20 hover:border-red-500/40 text-red-400 text-xs font-semibold transition-all"
@@ -311,19 +480,19 @@ function ContactCard({ contact, onDelete, onView, delay }) {
 
 // ── Main ──────────────────────────────────────────────────────────────────────
 function AdminContact() {
-  const [contacts,     setContacts]     = useState([]);
-  const [filtered,     setFiltered]     = useState([]);
-  const [loading,      setLoading]      = useState(true);
-  const [refreshing,   setRefreshing]   = useState(false);
-  const [search,       setSearch]       = useState("");
-  const [lookingFilter,setLookingFilter]= useState("all");
-  const [sortBy,       setSortBy]       = useState("newest");
-  const [toast,        setToast]        = useState(null);
-  const [deleteTarget, setDeleteTarget] = useState(null);
-  const [viewTarget,   setViewTarget]   = useState(null);
-  const [deleting,     setDeleting]     = useState(false);
+  const [contacts,      setContacts]      = useState([]);
+  const [filtered,      setFiltered]      = useState([]);
+  const [loading,       setLoading]       = useState(true);
+  const [refreshing,    setRefreshing]    = useState(false);
+  const [search,        setSearch]        = useState("");
+  const [lookingFilter, setLookingFilter] = useState("all");
+  const [sortBy,        setSortBy]        = useState("newest");
+  const [toast,         setToast]         = useState(null);
+  const [deleteTarget,  setDeleteTarget]  = useState(null);
+  const [viewTarget,    setViewTarget]    = useState(null);
+  const [replyTarget,   setReplyTarget]   = useState(null);   // ← NEW
+  const [deleting,      setDeleting]      = useState(false);
 
-  // ── Fetch ──
   const fetchContacts = async (isRefresh = false) => {
     try {
       isRefresh ? setRefreshing(true) : setLoading(true);
@@ -340,7 +509,6 @@ function AdminContact() {
 
   useEffect(() => { fetchContacts(); }, []);
 
-  // ── Filter + Sort ──
   useEffect(() => {
     let result = [...contacts];
     if (search.trim()) result = result.filter(c =>
@@ -358,7 +526,6 @@ function AdminContact() {
 
   const showToast = (msg, type = "success") => setToast({ msg, type });
 
-  // ── Delete ──
   const handleDeleteConfirm = async () => {
     if (!deleteTarget) return;
     setDeleting(true);
@@ -368,14 +535,12 @@ function AdminContact() {
       showToast(`Contact from ${deleteTarget.fullName} deleted`);
       setDeleteTarget(null);
     } catch (error) {
-      console.error("Delete failed", error);
       showToast("Failed to delete contact", "error");
     } finally {
       setDeleting(false);
     }
   };
 
-  // ── Stats ──
   const thisMonth = contacts.filter(c => {
     const d = new Date(c.createdAt), now = new Date();
     return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
@@ -384,12 +549,9 @@ function AdminContact() {
   const buyCount  = contacts.filter(c => c.lookingTo === "buy").length;
   const rentCount = contacts.filter(c => c.lookingTo === "rent").length;
 
-  // ── Loading ──
   if (loading) return (
     <div className="min-h-screen bg-[#1a1a2e] px-4 sm:px-6 md:px-8 py-6 md:py-10">
       <div className="max-w-7xl mx-auto space-y-6">
-
-        {/* Header skeleton */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div className="space-y-2">
             <div className="h-3 w-24 rounded bg-[#252544] animate-pulse" />
@@ -398,74 +560,19 @@ function AdminContact() {
           </div>
           <div className="w-10 h-10 rounded-xl bg-[#252544] animate-pulse self-start sm:self-auto" />
         </div>
-
-        {/* Mini stats skeleton */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
           {Array.from({ length: 4 }).map((_, i) => (
             <div key={i} className="flex items-center gap-3 border border-purple-900/20 rounded-2xl px-4 py-3 bg-[#252544] animate-pulse">
               <div className="w-9 h-9 rounded-xl bg-white/5 flex-shrink-0" />
-              <div className="space-y-2">
-                <div className="h-5 w-8 rounded bg-white/5" />
-                <div className="h-2.5 w-20 rounded bg-white/5" />
-              </div>
+              <div className="space-y-2"><div className="h-5 w-8 rounded bg-white/5" /><div className="h-2.5 w-20 rounded bg-white/5" /></div>
             </div>
           ))}
         </div>
-
-        {/* Search + filters skeleton */}
-        <div className="bg-[#252544] border border-purple-900/30 rounded-2xl p-4 animate-pulse">
-          <div className="flex flex-col sm:flex-row gap-3">
-            <div className="flex-1 h-10 rounded-xl bg-[#1a1a2e]" />
-            <div className="w-32 h-10 rounded-xl bg-[#1a1a2e]" />
-            <div className="w-36 h-10 rounded-xl bg-[#1a1a2e]" />
-          </div>
-        </div>
-
-        {/* Contact cards skeleton */}
         <div className="space-y-4">
-          {Array.from({ length: 5 }).map((_, i) => (
-            <div key={i} className="bg-[#252544] border border-purple-900/30 rounded-2xl p-5 animate-pulse">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-
-                {/* Left — person */}
-                <div className="flex items-start gap-3">
-                  <div className="w-11 h-11 rounded-2xl bg-white/5 flex-shrink-0" />
-                  <div className="space-y-2 flex-1">
-                    <div className="h-3.5 w-32 rounded bg-white/5" />
-                    <div className="h-2.5 w-44 rounded bg-white/5" />
-                    <div className="h-2.5 w-28 rounded bg-white/5" />
-                  </div>
-                </div>
-
-                {/* Middle — interest */}
-                <div className="space-y-2">
-                  <div className="h-2.5 w-16 rounded bg-white/5" />
-                  <div className="flex gap-2">
-                    <div className="h-6 w-14 rounded-full bg-white/5" />
-                    <div className="h-6 w-20 rounded-full bg-white/5" />
-                  </div>
-                  <div className="h-2.5 w-28 rounded bg-white/5" />
-                  <div className="h-2.5 w-24 rounded bg-white/5" />
-                </div>
-
-                {/* Right — date + actions */}
-                <div className="flex flex-col justify-between items-start md:items-end gap-3">
-                  <div className="space-y-1.5">
-                    <div className="h-2.5 w-24 rounded bg-white/5" />
-                    <div className="h-2 w-16 rounded bg-white/5" />
-                  </div>
-                  <div className="flex gap-2">
-                    <div className="h-8 w-16 rounded-xl bg-white/5" />
-                    <div className="h-8 w-24 rounded-xl bg-white/5" />
-                    <div className="h-8 w-16 rounded-xl bg-white/5" />
-                  </div>
-                </div>
-
-              </div>
-            </div>
+          {Array.from({ length: 4 }).map((_, i) => (
+            <div key={i} className="bg-[#252544] border border-purple-900/30 rounded-2xl p-5 animate-pulse h-28" />
           ))}
         </div>
-
       </div>
     </div>
   );
@@ -474,7 +581,7 @@ function AdminContact() {
     <div className="min-h-screen bg-[#1a1a2e] px-4 sm:px-6 md:px-8 py-6 md:py-10">
       <div className="max-w-7xl mx-auto space-y-6">
 
-        {/* ── Header ── */}
+        {/* Header */}
         <motion.div
           className="flex flex-col sm:flex-row sm:items-center justify-between gap-4"
           initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }}
@@ -494,7 +601,7 @@ function AdminContact() {
           </button>
         </motion.div>
 
-        {/* ── Mini Stats ── */}
+        {/* Mini Stats */}
         <motion.div
           className="grid grid-cols-2 sm:grid-cols-4 gap-4"
           initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4, delay: 0.1 }}
@@ -505,13 +612,12 @@ function AdminContact() {
           <MiniStat icon={<Users size={16} />}         label="Looking to Rent" value={rentCount}       color="blue"   />
         </motion.div>
 
-        {/* ── Search + Filters ── */}
+        {/* Search + Filters */}
         <motion.div
           className="bg-[#252544] border border-purple-900/30 rounded-2xl p-4"
           initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4, delay: 0.15 }}
         >
           <div className="flex flex-col sm:flex-row gap-3">
-            {/* Search */}
             <div className="relative flex-1">
               <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" />
               <input
@@ -526,8 +632,6 @@ function AdminContact() {
                 </button>
               )}
             </div>
-
-            {/* Looking To filter */}
             <select
               className="bg-[#1a1a2e] border border-purple-900/30 focus:border-purple-500 text-gray-300 rounded-xl px-4 py-2.5 text-sm outline-none cursor-pointer"
               value={lookingFilter}
@@ -538,8 +642,6 @@ function AdminContact() {
               <option value="rent">Rent</option>
               <option value="sell">Sell</option>
             </select>
-
-            {/* Sort */}
             <select
               className="bg-[#1a1a2e] border border-purple-900/30 focus:border-purple-500 text-gray-300 rounded-xl px-4 py-2.5 text-sm outline-none cursor-pointer"
               value={sortBy}
@@ -550,8 +652,6 @@ function AdminContact() {
               <option value="name-az">Name A → Z</option>
             </select>
           </div>
-
-          {/* Active filters */}
           {(search || lookingFilter !== "all") && (
             <div className="flex items-center gap-2 mt-3 flex-wrap">
               <span className="text-gray-500 text-xs">Filters:</span>
@@ -570,7 +670,7 @@ function AdminContact() {
           )}
         </motion.div>
 
-        {/* ── Contact Cards ── */}
+        {/* Contact Cards */}
         {filtered.length === 0 ? (
           <motion.div
             className="bg-[#252544] border border-purple-900/30 rounded-2xl p-16 text-center"
@@ -590,14 +690,22 @@ function AdminContact() {
                 contact={contact}
                 onDelete={setDeleteTarget}
                 onView={setViewTarget}
+                onReply={setReplyTarget}
                 delay={i * 0.04}
               />
             ))}
           </div>
         )}
 
-        {/* ── Modals ── */}
+        {/* Modals */}
         <AnimatePresence>
+          {replyTarget && (
+            <ReplyModal
+              contact={replyTarget}
+              onClose={() => setReplyTarget(null)}
+              showToast={showToast}
+            />
+          )}
           {deleteTarget && (
             <DeleteConfirmModal
               contact={deleteTarget}
@@ -614,7 +722,7 @@ function AdminContact() {
           )}
         </AnimatePresence>
 
-        {/* ── Toast ── */}
+        {/* Toast */}
         <AnimatePresence>
           {toast && <Toast msg={toast.msg} type={toast.type} onClose={() => setToast(null)} />}
         </AnimatePresence>
