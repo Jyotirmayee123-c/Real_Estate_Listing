@@ -17,6 +17,19 @@ const fmtTime = (d) =>
 const fmtAmount = (amount) =>
   new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR", maximumFractionDigits: 0 }).format(amount || 0);
 
+// ── UPI Sub-method mapping ────────────────────────────────────────────────────
+// When a payment has paymentMethod:"upi" (legacy), we need to know which UPI app was used.
+// This helper resolves it: if upiApp is set (phonepe/gpay/paytm), use that; else default to phonepe.
+const resolveUpiMethod = (payment) => {
+  const method = payment?.paymentMethod?.toLowerCase();
+  if (method !== "upi") return method; // Not a UPI payment, return as-is
+  // If upiApp sub-field is present, use it; fallback to phonepe
+  const sub = payment?.upiApp?.toLowerCase();
+  if (sub === "gpay" || sub === "googlepay" || sub === "google_pay") return "gpay";
+  if (sub === "paytm") return "paytm";
+  return "phonepe"; // default UPI → PhonePe
+};
+
 const statusConfig = {
   success: {
     label: "Paid",
@@ -41,37 +54,180 @@ const statusConfig = {
   },
 };
 
-// ── Payment Method — label ────────────────────────────────────────────────────
-const paymentMethodBadge = (val) => {
-  const map = {
-    phonepe:    "📱 PhonePe",
-    gpay:       "🔵 Google Pay",
-    paytm:      "💙 Paytm",
-    upi:        "🔵 UPI",
-    card:       "💳 Card",
-    netbanking: "🏦 Net Banking",
-    cash:       "💵 Cash",
-    wallet:     "👜 Wallet",
-    emi:        "📅 EMI",
-  };
-  return map[val?.toLowerCase()] || val || "—";
+// ── Payment Method Config (Branded) ──────────────────────────────────────────
+const paymentMethodConfig = {
+  phonepe: {
+    label: "PhonePe",
+    emoji: "📱",
+    logo: "PE",
+    bg: "bg-[#5f259f]",
+    text: "text-white",
+    border: "border-[#7b35cc]/40",
+    badge: "bg-[#5f259f]/20 text-purple-300 border-[#7b35cc]/40",
+    glow: "shadow-[0_0_12px_#5f259f55]",
+    dot: "bg-[#7b35cc]",
+  },
+  gpay: {
+    label: "Google Pay",
+    emoji: "🔵",
+    logo: "G",
+    bg: "bg-[#1a73e8]",
+    text: "text-white",
+    border: "border-blue-500/40",
+    badge: "bg-blue-600/20 text-blue-300 border-blue-500/40",
+    glow: "shadow-[0_0_12px_#1a73e855]",
+    dot: "bg-blue-400",
+  },
+  paytm: {
+    label: "Paytm",
+    emoji: "💙",
+    logo: "PT",
+    bg: "bg-[#00baf2]",
+    text: "text-white",
+    border: "border-cyan-400/40",
+    badge: "bg-cyan-500/20 text-cyan-300 border-cyan-400/40",
+    glow: "shadow-[0_0_12px_#00baf255]",
+    dot: "bg-cyan-400",
+  },
+  card: {
+    label: "Card",
+    emoji: "💳",
+    logo: "CARD",
+    bg: "bg-gradient-to-br from-gray-700 to-gray-900",
+    text: "text-white",
+    border: "border-gray-500/40",
+    badge: "bg-gray-600/20 text-gray-300 border-gray-500/40",
+    glow: "shadow-[0_0_12px_#55555555]",
+    dot: "bg-gray-400",
+  },
+  netbanking: {
+    label: "Net Banking",
+    emoji: "🏦",
+    logo: "NB",
+    bg: "bg-[#b45309]",
+    text: "text-white",
+    border: "border-yellow-600/40",
+    badge: "bg-yellow-700/20 text-yellow-300 border-yellow-600/40",
+    glow: "shadow-[0_0_12px_#b4530955]",
+    dot: "bg-yellow-400",
+  },
+  cash: {
+    label: "Cash",
+    emoji: "💵",
+    logo: "₹",
+    bg: "bg-[#166534]",
+    text: "text-white",
+    border: "border-green-700/40",
+    badge: "bg-green-800/20 text-green-300 border-green-700/40",
+    glow: "shadow-[0_0_12px_#16653455]",
+    dot: "bg-green-500",
+  },
+  wallet: {
+    label: "Wallet",
+    emoji: "👜",
+    logo: "W",
+    bg: "bg-[#be185d]",
+    text: "text-white",
+    border: "border-pink-500/40",
+    badge: "bg-pink-600/20 text-pink-300 border-pink-500/40",
+    glow: "shadow-[0_0_12px_#be185d55]",
+    dot: "bg-pink-400",
+  },
+  emi: {
+    label: "EMI",
+    emoji: "📅",
+    logo: "EMI",
+    bg: "bg-[#c2410c]",
+    text: "text-white",
+    border: "border-orange-500/40",
+    badge: "bg-orange-600/20 text-orange-300 border-orange-500/40",
+    glow: "shadow-[0_0_12px_#c2410c55]",
+    dot: "bg-orange-400",
+  },
+  // ── REMOVED generic "upi" entry ──
+  // Legacy "upi" records are now resolved to phonepe/gpay/paytm via resolveUpiMethod()
 };
 
-// ── Payment Method — color style ──────────────────────────────────────────────
-const paymentMethodStyle = (val) => {
-  const map = {
-    phonepe:    "bg-purple-500/10 text-purple-300 border-purple-500/20",
-    gpay:       "bg-blue-500/10 text-blue-300 border-blue-500/20",
-    paytm:      "bg-cyan-500/10 text-cyan-300 border-cyan-500/20",
-    upi:        "bg-blue-500/10 text-blue-300 border-blue-500/20",
-    card:       "bg-emerald-500/10 text-emerald-300 border-emerald-500/20",
-    netbanking: "bg-yellow-500/10 text-yellow-300 border-yellow-500/20",
-    cash:       "bg-green-500/10 text-green-300 border-green-500/20",
-    wallet:     "bg-pink-500/10 text-pink-300 border-pink-500/20",
-    emi:        "bg-orange-500/10 text-orange-300 border-orange-500/20",
+const getMethodConfig = (val) =>
+  paymentMethodConfig[val?.toLowerCase()] || {
+    label: val || "Unknown",
+    emoji: "💰",
+    logo: "?",
+    bg: "bg-gray-700",
+    text: "text-white",
+    border: "border-gray-500/40",
+    badge: "bg-gray-600/20 text-gray-300 border-gray-500/40",
+    glow: "",
+    dot: "bg-gray-400",
   };
-  return map[val?.toLowerCase()] || "bg-gray-500/10 text-gray-400 border-gray-500/20";
-};
+
+// ── Payment Method Filter Options ─────────────────────────────────────────────
+// "upi" is NOT a standalone option. PhonePe, Google Pay, Paytm are separate.
+const METHOD_FILTER_OPTIONS = [
+  { value: "all",        label: "All Methods" },
+  { value: "phonepe",    label: "📱 PhonePe" },
+  { value: "gpay",       label: "🔵 Google Pay" },
+  { value: "paytm",      label: "💙 Paytm" },
+  { value: "card",       label: "💳 Card" },
+  { value: "netbanking", label: "🏦 Net Banking" },
+  { value: "cash",       label: "💵 Cash" },
+  { value: "wallet",     label: "👜 Wallet" },
+  { value: "emi",        label: "📅 EMI" },
+];
+
+// ── UPI Sub-Method Selector (shown when method is "upi" and no upiApp set) ───
+const UPI_OPTIONS = [
+  { value: "phonepe", label: "📱 PhonePe",   bg: "bg-[#5f259f]", text: "text-white" },
+  { value: "gpay",    label: "🔵 Google Pay", bg: "bg-[#1a73e8]", text: "text-white" },
+  { value: "paytm",   label: "💙 Paytm",      bg: "bg-[#00baf2]", text: "text-white" },
+];
+
+// ── Payment Method Badge (inline pill) ───────────────────────────────────────
+function PaymentMethodPill({ method, size = "sm" }) {
+  const cfg = getMethodConfig(method);
+  const sz = size === "lg"
+    ? "text-[13px] px-3.5 py-1.5 gap-2"
+    : "text-[11px] px-2.5 py-1 gap-1.5";
+  return (
+    <span className={`inline-flex items-center rounded-full border font-bold ${sz} ${cfg.badge} ${cfg.border}`}>
+      <span>{cfg.emoji}</span>
+      <span>{cfg.label}</span>
+    </span>
+  );
+}
+
+// ── UPI App Selector Component ────────────────────────────────────────────────
+// Shows 3 branded buttons for PhonePe / Google Pay / Paytm
+function UpiAppSelector({ currentApp, onSelect, label = "UPI via" }) {
+  return (
+    <div className="flex flex-col gap-1.5">
+      <p className="text-[9px] text-gray-500 uppercase tracking-wider font-semibold">{label}</p>
+      <div className="flex gap-2 flex-wrap">
+        {UPI_OPTIONS.map((opt) => {
+          const isActive = currentApp === opt.value;
+          const cfg = getMethodConfig(opt.value);
+          return (
+            <button
+              key={opt.value}
+              type="button"
+              onClick={() => onSelect(opt.value)}
+              className={`flex items-center gap-1.5 rounded-xl px-3 py-2 border text-xs font-bold transition-all
+                ${isActive
+                  ? `${cfg.badge} ${cfg.border} ${cfg.glow} scale-105`
+                  : "bg-white/5 border-white/10 text-gray-400 hover:bg-white/10 hover:text-white"
+                }`}
+            >
+              <div className={`w-5 h-5 rounded-md ${cfg.bg} flex items-center justify-center text-[8px] font-black ${cfg.text} shadow`}>
+                {cfg.logo}
+              </div>
+              {cfg.label}
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
 
 const propertyTypeBadge = (val) => {
   const map = {
@@ -122,6 +278,7 @@ function Toast({ msg, type, onClose }) {
 
 // ── Delete Confirm Modal ──────────────────────────────────────────────────────
 function DeleteConfirmModal({ payment, onConfirm, onCancel, loading }) {
+  const resolvedMethod = resolveUpiMethod(payment);
   return (
     <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4">
       <motion.div
@@ -135,7 +292,14 @@ function DeleteConfirmModal({ payment, onConfirm, onCancel, loading }) {
         <p className="text-gray-400 text-sm text-center mb-1">Payment by</p>
         <p className="text-white font-bold text-center mb-1">{payment?.userName}</p>
         <p className="text-gray-500 text-xs text-center mb-1">{payment?.propertyName}</p>
-        <p className="text-purple-400 text-sm font-bold text-center mb-4">{fmtAmount(payment?.amount)}</p>
+        <p className="text-purple-400 text-sm font-bold text-center mb-1">{fmtAmount(payment?.amount)}</p>
+
+        {resolvedMethod && (
+          <div className="flex justify-center mb-4">
+            <PaymentMethodPill method={resolvedMethod} />
+          </div>
+        )}
+
         <p className="text-red-400 text-xs text-center mb-6 bg-red-900/20 border border-red-500/20 rounded-xl px-4 py-2">
           ⚠️ This action cannot be undone
         </p>
@@ -159,8 +323,12 @@ function DeleteConfirmModal({ payment, onConfirm, onCancel, loading }) {
 }
 
 // ── View Modal ────────────────────────────────────────────────────────────────
-function ViewModal({ payment, onClose }) {
+function ViewModal({ payment, onClose, onUpiAppChange }) {
   const status = statusConfig[payment?.paymentStatus] || statusConfig.pending;
+  const resolvedMethod = resolveUpiMethod(payment);
+  const cfg = getMethodConfig(resolvedMethod);
+  const isUpi = payment?.paymentMethod?.toLowerCase() === "upi";
+
   return (
     <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4">
       <motion.div
@@ -179,7 +347,7 @@ function ViewModal({ payment, onClose }) {
         </div>
 
         {/* Status Banner */}
-        <div className={`flex items-center justify-between px-5 py-4 rounded-2xl border mb-5 ${status.card}`}>
+        <div className={`flex items-center justify-between px-5 py-4 rounded-2xl border mb-4 ${status.card}`}>
           <div className="flex items-center gap-3">
             <div className={`w-2.5 h-2.5 rounded-full ${status.dot} animate-pulse`} />
             <span className="text-white font-bold text-sm">Payment Status</span>
@@ -188,6 +356,33 @@ function ViewModal({ payment, onClose }) {
             {status.icon} {status.label}
           </span>
         </div>
+
+        {/* Payment Method Hero Block */}
+        {payment?.paymentMethod && (
+          <div className={`flex items-center gap-4 px-5 py-4 rounded-2xl border mb-4 ${cfg.badge} ${cfg.border} ${cfg.glow}`}>
+            <div className={`w-14 h-14 rounded-2xl ${cfg.bg} flex items-center justify-center font-black text-lg ${cfg.text} shadow-xl flex-shrink-0`}>
+              {cfg.logo}
+            </div>
+            <div className="flex-1">
+              <p className="text-gray-400 text-[10px] uppercase tracking-widest font-semibold">Payment Method</p>
+              <p className="text-white font-black text-xl">{cfg.emoji} {cfg.label}</p>
+              <p className="text-gray-400 text-xs mt-0.5">Used by {payment?.userName}</p>
+            </div>
+          </div>
+        )}
+
+        {/* ── UPI Sub-App Selector (shown for legacy upi records) ── */}
+        {isUpi && (
+          <div className="bg-[#252544] border border-purple-900/30 rounded-2xl p-4 mb-4">
+            <p className="text-purple-400 text-[10px] font-bold uppercase tracking-widest mb-2">UPI App Used</p>
+            <UpiAppSelector
+              currentApp={resolvedMethod}
+              label="Select UPI App"
+              onSelect={(app) => onUpiAppChange && onUpiAppChange(payment._id, app)}
+            />
+            <p className="text-gray-600 text-[10px] mt-2">* Select the UPI app actually used for this payment</p>
+          </div>
+        )}
 
         <div className="space-y-4">
           <div className="bg-[#252544] border border-purple-900/30 rounded-2xl p-5">
@@ -203,13 +398,6 @@ function ViewModal({ payment, onClose }) {
                   <p className="text-white text-sm font-semibold">{row.value || "—"}</p>
                 </div>
               ))}
-              {/* Payment Method — styled pill */}
-              <div>
-                <p className="text-gray-500 text-[10px] mb-1.5">Payment Method</p>
-                <span className={`inline-flex items-center text-[11px] px-2.5 py-1 rounded-full border font-semibold ${paymentMethodStyle(payment?.paymentMethod)}`}>
-                  {paymentMethodBadge(payment?.paymentMethod)}
-                </span>
-              </div>
             </div>
           </div>
 
@@ -266,13 +454,18 @@ function ViewModal({ payment, onClose }) {
 }
 
 // ── Payment Card ──────────────────────────────────────────────────────────────
-function PaymentCard({ payment, onDelete, onView, delay }) {
+function PaymentCard({ payment, onDelete, onView, onUpiAppChange, delay }) {
   const [expanded, setExpanded] = useState(false);
   const status  = statusConfig[payment?.paymentStatus] || statusConfig.pending;
   const pending = (payment?.amount || 0) - (payment?.amountPaid || 0);
   const paidPct = payment?.amount
     ? Math.min(100, Math.round((payment.amountPaid / payment.amount) * 100))
     : 0;
+
+  // Resolve UPI → PhonePe/GPay/Paytm
+  const resolvedMethod = resolveUpiMethod(payment);
+  const cfg = getMethodConfig(resolvedMethod);
+  const isUpi = payment?.paymentMethod?.toLowerCase() === "upi";
 
   return (
     <motion.div
@@ -312,7 +505,7 @@ function PaymentCard({ payment, onDelete, onView, delay }) {
           )}
         </div>
 
-        {/* Col 3 — Amount + Progress + Method */}
+        {/* Col 3 — Amount + Progress + Payment Method */}
         <div className="space-y-2">
           <p className="text-purple-400 text-[10px] font-bold uppercase tracking-widest">Payment</p>
           <div className="flex items-baseline gap-1.5">
@@ -331,11 +524,39 @@ function PaymentCard({ payment, onDelete, onView, delay }) {
             <span className="text-gray-500">Paid: <span className="text-white font-semibold">{paidPct}%</span></span>
             {pending > 0 && <span className="text-yellow-500">Due: {fmtAmount(pending)}</span>}
           </div>
-          {/* ── Payment Method Pill ── */}
+
+          {/* BRANDED Payment Method — UPI auto-resolved to PhonePe/GPay/Paytm */}
           {payment.paymentMethod && (
-            <span className={`inline-flex items-center text-[10px] px-2.5 py-1 rounded-full border font-semibold ${paymentMethodStyle(payment.paymentMethod)}`}>
-              {paymentMethodBadge(payment.paymentMethod)}
-            </span>
+            <div className={`flex items-center gap-2 mt-1 rounded-xl px-3 py-2 border ${cfg.badge} ${cfg.border} ${cfg.glow}`}>
+              <div className={`w-7 h-7 rounded-lg ${cfg.bg} flex items-center justify-center font-black text-[10px] ${cfg.text} shadow-md flex-shrink-0`}>
+                {cfg.logo}
+              </div>
+              <div className="flex-1">
+                <p className="text-[9px] text-gray-500 uppercase tracking-wider">Paid via</p>
+                <p className="text-white text-xs font-bold">{cfg.emoji} {cfg.label}</p>
+              </div>
+              {/* Inline UPI app switcher on card — 3 tiny buttons */}
+              {isUpi && (
+                <div className="flex gap-1">
+                  {UPI_OPTIONS.map((opt) => {
+                    const oc = getMethodConfig(opt.value);
+                    const active = resolvedMethod === opt.value;
+                    return (
+                      <button
+                        key={opt.value}
+                        type="button"
+                        title={oc.label}
+                        onClick={(e) => { e.stopPropagation(); onUpiAppChange(payment._id, opt.value); }}
+                        className={`w-6 h-6 rounded-lg flex items-center justify-center text-[8px] font-black transition-all
+                          ${active ? `${oc.bg} ${oc.text} shadow-md scale-110` : "bg-white/10 text-gray-400 hover:bg-white/20"}`}
+                      >
+                        {oc.logo}
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
           )}
         </div>
 
@@ -379,15 +600,28 @@ function PaymentCard({ payment, onDelete, onView, delay }) {
             className="overflow-hidden"
           >
             <div className="px-5 pb-5 border-t border-purple-900/20 pt-4">
+              {/* UPI app selector in expanded panel */}
+              {isUpi && (
+                <div className="mb-4 bg-[#1a1a2e] border border-purple-900/20 rounded-xl px-4 py-3">
+                  <UpiAppSelector
+                    currentApp={resolvedMethod}
+                    label="UPI App Used"
+                    onSelect={(app) => onUpiAppChange(payment._id, app)}
+                  />
+                </div>
+              )}
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                 {[
                   {
                     label: "Method",
-                    node: (
-                      <span className={`inline-flex items-center text-[11px] px-2.5 py-1 rounded-full border font-semibold ${paymentMethodStyle(payment.paymentMethod)}`}>
-                        {paymentMethodBadge(payment.paymentMethod)}
-                      </span>
-                    ),
+                    node: payment.paymentMethod ? (
+                      <div className={`flex items-center gap-2 mt-1 rounded-xl px-3 py-2 border ${cfg.badge} ${cfg.border}`}>
+                        <div className={`w-6 h-6 rounded-lg ${cfg.bg} flex items-center justify-center font-black text-[9px] ${cfg.text} shadow-md`}>
+                          {cfg.logo}
+                        </div>
+                        <span className="text-white text-xs font-bold">{cfg.emoji} {cfg.label}</span>
+                      </div>
+                    ) : <span className="text-gray-500 text-sm">—</span>,
                   },
                   { label: "Total",   text: fmtAmount(payment.amount) },
                   { label: "Cleared", text: fmtAmount(payment.amountPaid) },
@@ -412,6 +646,42 @@ function PaymentCard({ payment, onDelete, onView, delay }) {
           </motion.div>
         )}
       </AnimatePresence>
+    </motion.div>
+  );
+}
+
+// ── Method Stats Bar ──────────────────────────────────────────────────────────
+// Uses resolveUpiMethod so "upi" records show as phonepe/gpay/paytm in the stats
+function MethodStatsBar({ payments }) {
+  const counts = payments.reduce((acc, p) => {
+    const key = resolveUpiMethod(p) || "unknown";
+    acc[key] = (acc[key] || 0) + 1;
+    return acc;
+  }, {});
+
+  const sorted = Object.entries(counts).sort((a, b) => b[1] - a[1]);
+  if (sorted.length === 0) return null;
+
+  return (
+    <motion.div
+      className="bg-[#252544] border border-purple-900/30 rounded-2xl p-4"
+      initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4, delay: 0.2 }}
+    >
+      <p className="text-purple-400 text-[10px] font-bold uppercase tracking-widest mb-3">Payment Methods Used</p>
+      <div className="flex flex-wrap gap-2">
+        {sorted.map(([method, count]) => {
+          const cfg = getMethodConfig(method);
+          return (
+            <div key={method} className={`flex items-center gap-2 rounded-xl px-3 py-2 border ${cfg.badge} ${cfg.border}`}>
+              <div className={`w-6 h-6 rounded-lg ${cfg.bg} flex items-center justify-center font-black text-[9px] ${cfg.text} shadow-md flex-shrink-0`}>
+                {cfg.logo}
+              </div>
+              <span className="text-white text-xs font-semibold">{cfg.emoji} {cfg.label}</span>
+              <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-white/10">{count}</span>
+            </div>
+          );
+        })}
+      </div>
     </motion.div>
   );
 }
@@ -449,6 +719,20 @@ function AdminPayment() {
 
   useEffect(() => { fetchPayments(); }, []);
 
+  // ── Handle UPI app change (local state only; optionally call API to persist) ──
+  const handleUpiAppChange = (paymentId, newApp) => {
+    setPayments(prev =>
+      prev.map(p =>
+        p._id === paymentId
+          ? { ...p, upiApp: newApp }
+          : p
+      )
+    );
+    // If you want to persist this to the backend, uncomment:
+    // api.patch(`/payment/${paymentId}`, { upiApp: newApp }).catch(console.error);
+    showToast(`UPI app updated to ${getMethodConfig(newApp).label}`, "success");
+  };
+
   useEffect(() => {
     let result = [...payments];
     if (search.trim()) result = result.filter(p =>
@@ -458,7 +742,12 @@ function AdminPayment() {
       p.transactionId?.toLowerCase().includes(search.toLowerCase())
     );
     if (statusFilter !== "all") result = result.filter(p => p.paymentStatus === statusFilter);
-    if (methodFilter !== "all") result = result.filter(p => p.paymentMethod?.toLowerCase() === methodFilter);
+
+    // ── Method filter: resolve UPI records to their sub-app before filtering ──
+    if (methodFilter !== "all") {
+      result = result.filter(p => resolveUpiMethod(p) === methodFilter);
+    }
+
     if (sortBy === "newest")      result.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
     if (sortBy === "oldest")      result.sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
     if (sortBy === "amount-high") result.sort((a, b) => (b.amount || 0) - (a.amount || 0));
@@ -553,10 +842,13 @@ function AdminPayment() {
           <MiniStat icon={<AlertCircle size={16} />} label="Pending Records" value={pendingCount}            color="blue"   />
         </motion.div>
 
+        {/* Method Stats Bar — UPI resolved to sub-apps */}
+        <MethodStatsBar payments={payments} />
+
         {/* Search + Filters */}
         <motion.div
           className="bg-[#252544] border border-purple-900/30 rounded-2xl p-4"
-          initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4, delay: 0.15 }}
+          initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4, delay: 0.25 }}
         >
           <div className="flex flex-col sm:flex-row gap-3 flex-wrap">
             <div className="relative flex-1 min-w-[200px]">
@@ -583,23 +875,18 @@ function AdminPayment() {
               <option value="pending">Pending</option>
               <option value="failed">Failed</option>
             </select>
-            {/* ── Method Filter ── */}
+
+            {/* ── METHOD FILTER: PhonePe / Google Pay / Paytm shown separately (no generic UPI) ── */}
             <select
               className="bg-[#1a1a2e] border border-purple-900/30 focus:border-purple-500 text-gray-300 rounded-xl px-4 py-2.5 text-sm outline-none cursor-pointer"
               value={methodFilter}
               onChange={e => setMethodFilter(e.target.value)}
             >
-              <option value="all">All Methods</option>
-              <option value="phonepe">📱 PhonePe</option>
-              <option value="gpay">🔵 Google Pay</option>
-              <option value="paytm">💙 Paytm</option>
-              <option value="upi">🔵 UPI</option>
-              <option value="card">💳 Card</option>
-              <option value="netbanking">🏦 Net Banking</option>
-              <option value="cash">💵 Cash</option>
-              <option value="wallet">👜 Wallet</option>
-              <option value="emi">📅 EMI</option>
+              {METHOD_FILTER_OPTIONS.map(opt => (
+                <option key={opt.value} value={opt.value}>{opt.label}</option>
+              ))}
             </select>
+
             <select
               className="bg-[#1a1a2e] border border-purple-900/30 focus:border-purple-500 text-gray-300 rounded-xl px-4 py-2.5 text-sm outline-none cursor-pointer"
               value={sortBy}
@@ -627,7 +914,8 @@ function AdminPayment() {
               )}
               {methodFilter !== "all" && (
                 <span className="flex items-center gap-1 text-xs px-2.5 py-1 rounded-full bg-purple-600/20 text-purple-400 border border-purple-500/20">
-                  {paymentMethodBadge(methodFilter)} <button onClick={() => setMethodFilter("all")}><X size={10} /></button>
+                  {getMethodConfig(methodFilter).emoji} {getMethodConfig(methodFilter).label}
+                  <button onClick={() => setMethodFilter("all")}><X size={10} /></button>
                 </span>
               )}
               <span className="text-gray-500 text-xs">{filtered.length} result{filtered.length !== 1 ? "s" : ""}</span>
@@ -655,6 +943,7 @@ function AdminPayment() {
                 payment={payment}
                 onDelete={setDeleteTarget}
                 onView={setViewTarget}
+                onUpiAppChange={handleUpiAppChange}
                 delay={i * 0.04}
               />
             ))}
@@ -675,6 +964,7 @@ function AdminPayment() {
             <ViewModal
               payment={viewTarget}
               onClose={() => setViewTarget(null)}
+              onUpiAppChange={handleUpiAppChange}
             />
           )}
         </AnimatePresence>
