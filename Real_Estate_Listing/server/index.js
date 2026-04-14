@@ -1,17 +1,15 @@
 const dotenv = require("dotenv");
-dotenv.config(); // ✅ Must be FIRST
+dotenv.config();
 
 const express = require("express");
 const cors = require("cors");
 const connectDB = require("./config/db");
 
-// Connect to the database
 connectDB();
 
 const app = express();
 const PORT = process.env.PORT || 8000;
 
-// ✅ CORS — allow your frontend origin (update in production)
 app.use(
   cors({
     origin: process.env.CLIENT_URL || "http://localhost:5173",

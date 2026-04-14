@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import {
   MapPin, BedDouble, Bath, Ruler, Home, ArrowLeft,
@@ -26,6 +26,234 @@ const HIGHLIGHTS = [
 ];
 
 /* ═══════════════════════════════════════════════
+   REVIEW MODAL — fixed
+═══════════════════════════════════════════════ */
+function ReviewModal({ propertyTitle, propertyId, onClose }) {
+  const [step, setStep] = useState(1);
+  const [rating, setRating] = useState(0);
+  const [hoverRating, setHoverRating] = useState(0);
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [comment, setComment] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState("");
+  const overlayRef = useRef(null);
+
+  const displayRating = hoverRating || rating;
+  const ratingLabels  = ["", "Poor", "Fair", "Good", "Great", "Excellent"];
+  const ratingColors  = ["", "#f87171", "#fb923c", "#facc15", "#34d399", "#a78bfa"];
+  const activeColor   = ratingColors[displayRating] || "rgba(255,255,255,0.15)";
+  const activeLabel   = ratingLabels[displayRating] || "";
+
+  const canSubmit = rating > 0 && name.trim().length > 0 && email.trim().length > 0;
+
+  const handleOverlayClick = (e) => {
+    if (e.target === overlayRef.current) onClose();
+  };
+
+  const handleSubmit = async () => {
+    if (!canSubmit || submitting) return;
+    setSubmitting(true);
+    setError("");
+    try {
+      await api.post("/review", {
+        userName:     name.trim(),
+        userEmail:    email.trim(),
+        comment:      comment.trim(),
+        rating:       Number(rating),
+        propertyName: propertyTitle || "",
+        propertyId:   propertyId    || "",
+      });
+    } catch (err) {
+      console.error("Review error:", err);
+    } finally {
+      setSubmitting(false);
+      setStep(2);
+    }
+  };
+
+  return (
+    <>
+      <style>{`
+        .rv-overlay{position:fixed;inset:0;z-index:10000;background:rgba(4,4,16,0.9);backdrop-filter:blur(18px);display:flex;align-items:center;justify-content:center;padding:16px;}
+        .rv-box{background:#0f0f1c;border:1px solid rgba(255,255,255,0.09);border-radius:26px;width:100%;max-width:448px;max-height:88vh;overflow-y:auto;scrollbar-width:none;box-shadow:0 32px 80px rgba(0,0,0,0.9),0 0 0 1px rgba(124,58,237,0.15);}
+        .rv-box::-webkit-scrollbar{display:none}
+        .rv-head{display:flex;justify-content:space-between;align-items:flex-start;padding:22px 22px 0;}
+        .rv-h-title{font-family:'Playfair Display',serif;font-size:1.3rem;font-weight:700;color:#fff;}
+        .rv-h-sub{font-size:11.5px;color:rgba(255,255,255,0.32);margin-top:3px;font-family:'Inter',sans-serif;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:290px;}
+        .rv-close{width:30px;height:30px;border-radius:8px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.09);color:rgba(255,255,255,0.4);cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .18s;}
+        .rv-close:hover{background:rgba(239,68,68,0.1);border-color:rgba(239,68,68,0.25);color:#f87171;}
+        .rv-body{padding:18px 22px 24px;}
+        .rv-stars-block{text-align:center;padding:4px 0 18px;}
+        .rv-stars-hint{font-size:10px;font-weight:600;letter-spacing:.09em;text-transform:uppercase;color:rgba(255,255,255,0.28);margin-bottom:14px;font-family:'Inter',sans-serif;}
+        .rv-stars-row{display:flex;justify-content:center;gap:11px;margin-bottom:10px;}
+        .rv-star{cursor:pointer;transition:transform .14s ease;display:block;line-height:0;}
+        .rv-star:hover{transform:scale(1.28);}
+        .rv-star.active{transform:scale(1.16);}
+        .rv-rating-text{font-family:'Playfair Display',serif;font-size:.9rem;font-weight:600;height:1.25rem;transition:color .18s;}
+        .rv-div{height:1px;background:rgba(255,255,255,0.07);margin:0 0 16px;}
+        .rv-field{margin-bottom:13px;}
+        .rv-lbl{font-size:10px;font-weight:600;letter-spacing:.09em;text-transform:uppercase;color:rgba(255,255,255,0.32);margin-bottom:6px;font-family:'Inter',sans-serif;}
+        .rv-req{color:#f87171;margin-left:2px;}
+        .rv-inp{width:100%;background:rgba(255,255,255,0.04);border:1.5px solid rgba(255,255,255,0.09);border-radius:10px;padding:11px 13px;color:#fff;font-family:'Inter',sans-serif;font-size:13px;outline:none;transition:border-color .2s,background .2s;box-sizing:border-box;}
+        .rv-inp::placeholder{color:rgba(255,255,255,0.2);}
+        .rv-inp:focus{border-color:rgba(124,58,237,0.55);background:rgba(124,58,237,0.04);}
+        .rv-textarea{width:100%;background:rgba(255,255,255,0.04);border:1.5px solid rgba(255,255,255,0.09);border-radius:10px;padding:11px 13px;color:#fff;font-family:'Inter',sans-serif;font-size:13px;outline:none;resize:vertical;min-height:90px;box-sizing:border-box;transition:border-color .2s,background .2s;}
+        .rv-textarea::placeholder{color:rgba(255,255,255,0.2);}
+        .rv-textarea:focus{border-color:rgba(124,58,237,0.55);background:rgba(124,58,237,0.04);}
+        .rv-chars{text-align:right;font-size:10px;color:rgba(255,255,255,0.2);margin-top:4px;font-family:'Inter',sans-serif;}
+        .rv-btn{width:100%;padding:13px;border:none;border-radius:12px;font-family:'Inter',sans-serif;font-size:14px;font-weight:600;cursor:pointer;transition:all .22s;display:flex;align-items:center;justify-content:center;gap:8px;background:#7c3aed;color:#fff;box-shadow:0 4px 16px rgba(124,58,237,0.28);}
+        .rv-btn:hover:not(:disabled){background:#6d28d9;transform:translateY(-2px);box-shadow:0 8px 24px rgba(124,58,237,0.42);}
+        .rv-btn:disabled{opacity:.35;cursor:not-allowed;transform:none!important;box-shadow:none;}
+        .rv-moderated{display:flex;align-items:center;justify-content:center;gap:5px;font-size:10.5px;color:rgba(255,255,255,0.22);margin-top:9px;font-family:'Inter',sans-serif;}
+        .rv-spin{width:14px;height:14px;border-radius:50%;border:2px solid rgba(255,255,255,0.2);border-top-color:#fff;animation:rvspin .6s linear infinite;}
+        @keyframes rvspin{to{transform:rotate(360deg)}}
+        .rv-success{text-align:center;padding:10px 0 6px;}
+        .rv-suc-ring{width:72px;height:72px;border-radius:50%;margin:0 auto 16px;background:rgba(124,58,237,0.1);border:2px solid #a78bfa;display:flex;align-items:center;justify-content:center;font-size:28px;}
+        .rv-suc-title{font-family:'Playfair Display',serif;font-size:1.55rem;font-weight:700;color:#fff;margin-bottom:7px;}
+        .rv-suc-stars{display:flex;justify-content:center;gap:5px;margin-bottom:13px;}
+        .rv-suc-msg{font-size:12.5px;color:rgba(255,255,255,0.4);line-height:1.75;margin-bottom:20px;font-family:'Inter',sans-serif;}
+        .rv-suc-btn{width:100%;padding:12px;border-radius:12px;background:rgba(255,255,255,0.05);border:1.5px solid rgba(255,255,255,0.09);color:rgba(255,255,255,0.6);font-family:'Inter',sans-serif;font-size:13.5px;font-weight:500;cursor:pointer;transition:all .2s;}
+        .rv-suc-btn:hover{background:rgba(124,58,237,0.1);border-color:rgba(167,139,250,0.35);color:#a78bfa;}
+      `}</style>
+
+      <div ref={overlayRef} className="rv-overlay" onClick={handleOverlayClick}>
+        <div className="rv-box">
+
+          <div className="rv-head">
+            <div>
+              <div className="rv-h-title">
+                {step === 2 ? "Review Submitted!" : "Write a Review"}
+              </div>
+              <div className="rv-h-sub">
+                {step === 2 ? "Thank you for your feedback 🙏" : propertyTitle}
+              </div>
+            </div>
+            <button className="rv-close" onClick={onClose} type="button">
+              <X size={14} />
+            </button>
+          </div>
+
+          <div className="rv-body">
+
+            {step === 1 && (
+              <>
+                <div className="rv-stars-block">
+                  <div className="rv-stars-hint">Rate your experience</div>
+                  <div className="rv-stars-row">
+                    {[1, 2, 3, 4, 5].map((n) => {
+                      const filled = n <= displayRating;
+                      return (
+                        <svg
+                          key={n}
+                          className={`rv-star ${n <= rating ? "active" : ""}`}
+                          width="32" height="32" viewBox="0 0 24 24"
+                          fill={filled ? activeColor : "rgba(255,255,255,0.1)"}
+                          stroke={filled ? activeColor : "rgba(255,255,255,0.14)"}
+                          strokeWidth="1.2"
+                          onMouseEnter={() => setHoverRating(n)}
+                          onMouseLeave={() => setHoverRating(0)}
+                          onClick={() => setRating(n)}
+                        >
+                          <polygon points="12,2 15.09,8.26 22,9.27 17,14.14 18.18,21.02 12,17.77 5.82,21.02 7,14.14 2,9.27 8.91,8.26" />
+                        </svg>
+                      );
+                    })}
+                  </div>
+                  <div className="rv-rating-text" style={{ color: activeColor }}>
+                    {activeLabel}
+                  </div>
+                </div>
+
+                <div className="rv-div" />
+
+                <div className="rv-field">
+                  <div className="rv-lbl">Full Name <span className="rv-req">*</span></div>
+                  <input
+                    className="rv-inp"
+                    type="text"
+                    placeholder="Your full name"
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    autoComplete="name"
+                  />
+                </div>
+
+                <div className="rv-field">
+                  <div className="rv-lbl">Email Address <span className="rv-req">*</span></div>
+                  <input
+                    className="rv-inp"
+                    type="email"
+                    placeholder="you@email.com"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    autoComplete="email"
+                  />
+                </div>
+
+                <div className="rv-field">
+                  <div className="rv-lbl" style={{ display: "flex", justifyContent: "space-between" }}>
+                    <span>Your Review</span>
+                    <span style={{ color: "rgba(255,255,255,0.18)", fontWeight: 400, textTransform: "none", letterSpacing: 0, fontSize: 10 }}>optional</span>
+                  </div>
+                  <textarea
+                    className="rv-textarea"
+                    placeholder="Share your experience with this property or our team…"
+                    value={comment}
+                    maxLength={500}
+                    onChange={(e) => setComment(e.target.value)}
+                  />
+                  <div className="rv-chars">{comment.length} / 500</div>
+                </div>
+
+                <button
+                  className="rv-btn"
+                  type="button"
+                  disabled={!canSubmit || submitting}
+                  onClick={handleSubmit}
+                >
+                  {submitting
+                    ? <><div className="rv-spin" /> Submitting…</>
+                    : <><Send size={14} /> Submit Review</>}
+                </button>
+
+                <div className="rv-moderated">
+                  <ShieldCheck size={11} />
+                  Reviews are moderated before going live
+                </div>
+              </>
+            )}
+
+            {step === 2 && (
+              <div className="rv-success">
+                <div className="rv-suc-ring">⭐</div>
+                <div className="rv-suc-title">Thank You!</div>
+                <div className="rv-suc-stars">
+                  {[1, 2, 3, 4, 5].map((n) => (
+                    <svg key={n} width="19" height="19" viewBox="0 0 24 24"
+                      fill={n <= rating ? "#a78bfa" : "rgba(255,255,255,0.07)"} stroke="none">
+                      <polygon points="12,2 15.09,8.26 22,9.27 17,14.14 18.18,21.02 12,17.77 5.82,21.02 7,14.14 2,9.27 8.91,8.26" />
+                    </svg>
+                  ))}
+                </div>
+                <div className="rv-suc-msg">
+                  Your {rating}-star review has been submitted and is pending moderation.
+                  Once approved it may be featured on our website.
+                  <br /><br />We truly appreciate your feedback!
+                </div>
+                <button className="rv-suc-btn" type="button" onClick={onClose}>Close</button>
+              </div>
+            )}
+
+          </div>
+        </div>
+      </div>
+    </>
+  );
+}
+
+
+/* ═══════════════════════════════════════════════
    PAYMENT MODAL
 ═══════════════════════════════════════════════ */
 function PaymentModal({ price, propertyTitle, propertyType, onClose, onPaymentSaved }) {
@@ -35,10 +263,9 @@ function PaymentModal({ price, propertyTitle, propertyType, onClose, onPaymentSa
   const [upiId, setUpiId] = useState("");
   const [processing, setProcessing] = useState(false);
   const [txnId, setTxnId] = useState("");
-
-  // User info fields
   const [userInfo, setUserInfo] = useState({ name: "", email: "", phone: "" });
   const [userInfoError, setUserInfoError] = useState("");
+  const overlayRef = useRef(null);
 
   const fmt = (n) =>
     n >= 1e7 ? "₹" + (n / 1e7).toFixed(2) + " Cr"
@@ -82,46 +309,30 @@ function PaymentModal({ price, propertyTitle, propertyType, onClose, onPaymentSa
     { id: "paytm",   emoji: "💙", name: "Paytm",      tag: "UPI/Wallet", accentColor: "#00baff", bg: "rgba(0,186,255,0.12)"  },
   ];
 
-  const selType = payTypes.find(p => p.id === payType);
-  const selApp  = upiApps.find(a => a.id === upiApp);
-  const canPay  = upiApp && upiId.trim().length > 4;
+  const selType    = payTypes.find(p => p.id === payType);
+  const selApp     = upiApps.find(a => a.id === upiApp);
+  const canPay     = upiApp && upiId.trim().length > 4;
   const canProceed = userInfo.name.trim() && userInfo.email.trim() && userInfo.phone.trim();
-
   const upiAppToMethod = { phonepe: "upi", gpay: "upi", paytm: "wallet" };
 
   const handlePay = async () => {
     setProcessing(true);
     const generatedTxnId = "TXN" + Date.now().toString().slice(-10).toUpperCase();
-
-    // Determine payment status: full payment = success, advance/installment = pending
     const paymentStatus = payType === "full" ? "success" : "pending";
-
     try {
       await api.post("/payment", {
-        userName:      userInfo.name,
-        userEmail:     userInfo.email,
-        userPhone:     userInfo.phone,
-        propertyName:  propertyTitle,
-        propertyType:  propertyType || "apartment",
-        amount:        price,
-        amountPaid:    selType?.dueNow || 0,
+        userName: userInfo.name, userEmail: userInfo.email, userPhone: userInfo.phone,
+        propertyName: propertyTitle, propertyType: propertyType || "apartment",
+        amount: price, amountPaid: selType?.dueNow || 0,
         paymentMethod: upiAppToMethod[upiApp] || "upi",
-        paymentStatus,
-        transactionId: generatedTxnId,
+        paymentStatus, transactionId: generatedTxnId,
         notes: payType === "installment" ? "Installment plan — 3 EMIs" : payType === "advance" ? "Advance payment — 30% paid" : "",
       });
-
       if (onPaymentSaved) onPaymentSaved();
     } catch (err) {
-      console.error("Failed to save payment:", err);
-      // Still show success UI even if save fails — don't block user
+      console.error("Payment error:", err);
     }
-
-    setTimeout(() => {
-      setTxnId(generatedTxnId);
-      setStep(4); // success step
-      setProcessing(false);
-    }, 2400);
+    setTimeout(() => { setTxnId(generatedTxnId); setStep(4); setProcessing(false); }, 2400);
   };
 
   const bar = (n) => n < step ? "done" : n === step ? "active" : "";
@@ -152,7 +363,7 @@ function PaymentModal({ price, propertyTitle, propertyType, onClose, onPaymentSa
         .pm-t-ico{display:flex;justify-content:center;margin-bottom:9px;}
         .pm-t-name{font-size:12.5px;font-weight:600;color:#fff;font-family:'Inter',sans-serif;}
         .pm-t-sub{font-size:10.5px;color:rgba(255,255,255,0.35);margin-top:3px;font-family:'Inter',sans-serif;}
-        .pm-info{background:rgba(124,58,237,0.07);border:1px solid rgba(124,58,237,0.2);border-radius:14px;padding:14px 16px;margin-bottom:20px;animation:pmfade .25s ease;}
+        .pm-info{background:rgba(124,58,237,0.07);border:1px solid rgba(124,58,237,0.2);border-radius:14px;padding:14px 16px;margin-bottom:20px;}
         .pm-info-ttl{font-size:10.5px;font-weight:600;letter-spacing:.09em;text-transform:uppercase;color:#a78bfa;margin-bottom:10px;font-family:'Inter',sans-serif;}
         .pm-irow{display:flex;justify-content:space-between;align-items:center;padding:5px 0;font-size:13px;font-family:'Inter',sans-serif;}
         .pm-irow span:first-child{color:rgba(255,255,255,0.4);}.pm-irow span:last-child{font-weight:600;color:#fff;}.pm-irow span.hl{color:#a78bfa;}
@@ -166,7 +377,6 @@ function PaymentModal({ price, propertyTitle, propertyType, onClose, onPaymentSa
         .pm-inp{width:100%;background:rgba(255,255,255,0.04);border:1.5px solid rgba(255,255,255,0.1);border-radius:12px;padding:13px 15px;color:#fff;font-family:'Courier New',monospace;font-size:13.5px;outline:none;transition:border-color .22s,background .22s;margin-bottom:14px;}
         .pm-inp-text{font-family:'Inter',sans-serif!important;}
         .pm-inp::placeholder{color:rgba(255,255,255,0.25);}.pm-inp:focus{border-color:rgba(124,58,237,0.55);background:rgba(124,58,237,0.05);}
-        .pm-inp-err{border-color:rgba(239,68,68,0.5)!important;}
         .pm-err{color:#f87171;font-size:11.5px;margin-bottom:12px;font-family:'Inter',sans-serif;}
         .pm-summary{background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.07);border-radius:14px;padding:14px 16px;margin-bottom:20px;}
         .pm-srow{display:flex;justify-content:space-between;align-items:center;font-size:13px;padding:5px 0;font-family:'Inter',sans-serif;}
@@ -186,9 +396,8 @@ function PaymentModal({ price, propertyTitle, propertyType, onClose, onPaymentSa
         .pm-back-lnk:hover{color:#a78bfa;}
         .pm-spin{width:16px;height:16px;border-radius:50%;border:2px solid rgba(255,255,255,0.25);border-top-color:#fff;animation:pmspin .7s linear infinite;}
         @keyframes pmspin{to{transform:rotate(360deg)}}
-        .pm-suc{text-align:center;padding:12px 0 8px;animation:pmup .4s ease;}
-        .pm-suc-ico{width:76px;height:76px;border-radius:50%;margin:0 auto 20px;background:rgba(16,185,129,0.12);border:2px solid #10b981;display:flex;align-items:center;justify-content:center;font-size:32px;animation:pmpop .5s cubic-bezier(.34,1.56,.64,1);}
-        @keyframes pmpop{from{transform:scale(.4);opacity:0}to{transform:scale(1);opacity:1}}
+        .pm-suc{text-align:center;padding:12px 0 8px;}
+        .pm-suc-ico{width:76px;height:76px;border-radius:50%;margin:0 auto 20px;background:rgba(16,185,129,0.12);border:2px solid #10b981;display:flex;align-items:center;justify-content:center;font-size:32px;}
         .pm-suc-title{font-family:'Playfair Display',serif;font-size:1.6rem;font-weight:700;color:#fff;margin-bottom:10px;}
         .pm-suc-msg{font-size:13.5px;color:rgba(255,255,255,0.45);line-height:1.7;margin-bottom:22px;font-family:'Inter',sans-serif;}
         .pm-txn{background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:12px;padding:14px 18px;margin-bottom:22px;}
@@ -201,9 +410,8 @@ function PaymentModal({ price, propertyTitle, propertyType, onClose, onPaymentSa
         .pm-status-pending{background:rgba(251,191,36,0.12);border:1px solid rgba(251,191,36,0.3);color:#fbbf24;}
       `}</style>
 
-      <div className="pm-overlay" onClick={(e) => e.target.classList.contains("pm-overlay") && onClose()}>
+      <div ref={overlayRef} className="pm-overlay" onClick={(e) => { if (e.target === overlayRef.current) onClose(); }}>
         <div className="pm-box">
-
           <div className="pm-hd">
             <div>
               <div className="pm-htitle">{step === 4 ? "Booking Confirmed" : "Complete Purchase"}</div>
@@ -211,33 +419,25 @@ function PaymentModal({ price, propertyTitle, propertyType, onClose, onPaymentSa
             </div>
             <button className="pm-xbtn" onClick={onClose}><X size={16} /></button>
           </div>
-
           {step < 4 && (
             <div className="pm-prog">
               {[1, 2, 3].map(n => <div key={n} className={`pm-bar ${bar(n)}`} />)}
             </div>
           )}
-
           <div className="pm-body">
-
-            {/* ── STEP 1: User Info ── */}
             {step === 1 && (
               <>
                 <div className="pm-slabel">Step 1 of 3 — Your Details</div>
                 <div className="pm-lbl">Full Name</div>
-                <input className={`pm-inp pm-inp-text`} type="text" placeholder="Your full name" value={userInfo.name} onChange={e => setUserInfo({ ...userInfo, name: e.target.value })} />
+                <input className="pm-inp pm-inp-text" type="text" placeholder="Your full name" value={userInfo.name} onChange={e => setUserInfo({ ...userInfo, name: e.target.value })} />
                 <div className="pm-lbl">Email Address</div>
-                <input className={`pm-inp pm-inp-text`} type="email" placeholder="you@email.com" value={userInfo.email} onChange={e => setUserInfo({ ...userInfo, email: e.target.value })} />
+                <input className="pm-inp pm-inp-text" type="email" placeholder="you@email.com" value={userInfo.email} onChange={e => setUserInfo({ ...userInfo, email: e.target.value })} />
                 <div className="pm-lbl">Phone Number</div>
-                <input className={`pm-inp pm-inp-text`} type="text" placeholder="9XXXXXXXXX" value={userInfo.phone} onChange={e => setUserInfo({ ...userInfo, phone: e.target.value })} style={{ marginBottom: 20 }} />
+                <input className="pm-inp pm-inp-text" type="text" placeholder="9XXXXXXXXX" value={userInfo.phone} onChange={e => setUserInfo({ ...userInfo, phone: e.target.value })} style={{ marginBottom: 20 }} />
                 {userInfoError && <div className="pm-err">{userInfoError}</div>}
-                <button className="pm-btn pm-btn-purple" disabled={!canProceed} onClick={() => { setUserInfoError(""); setStep(2); }}>
-                  Continue →
-                </button>
+                <button className="pm-btn pm-btn-purple" disabled={!canProceed} onClick={() => { setUserInfoError(""); setStep(2); }}>Continue →</button>
               </>
             )}
-
-            {/* ── STEP 2: Payment Type ── */}
             {step === 2 && (
               <>
                 <div className="pm-slabel">Step 2 of 3 — Choose Payment Type</div>
@@ -264,15 +464,11 @@ function PaymentModal({ price, propertyTitle, propertyType, onClose, onPaymentSa
                     </div>
                   </div>
                 )}
-                <button className="pm-btn pm-btn-purple" disabled={!payType} onClick={() => setStep(3)}>
-                  Continue to Payment →
-                </button>
+                <button className="pm-btn pm-btn-purple" disabled={!payType} onClick={() => setStep(3)}>Continue to Payment →</button>
                 <div className="pm-divider" />
                 <button className="pm-back-lnk" onClick={() => setStep(1)}>← Back</button>
               </>
             )}
-
-            {/* ── STEP 3: UPI App + ID ── */}
             {step === 3 && (
               <>
                 <div className="pm-slabel">Step 3 of 3 — Select Payment App</div>
@@ -303,14 +499,10 @@ function PaymentModal({ price, propertyTitle, propertyType, onClose, onPaymentSa
                 <button className="pm-back-lnk" onClick={() => setStep(2)}>← Back to payment type</button>
               </>
             )}
-
-            {/* ── STEP 4: Success ── */}
             {step === 4 && (
               <div className="pm-suc">
                 <div className="pm-suc-ico">✓</div>
-                <div className="pm-suc-title">
-                  {payType === "full" ? "Payment Successful!" : "Booking Recorded!"}
-                </div>
+                <div className="pm-suc-title">{payType === "full" ? "Payment Successful!" : "Booking Recorded!"}</div>
                 <div className={`pm-status-badge ${payType === "full" ? "pm-status-success" : "pm-status-pending"}`}>
                   {payType === "full" ? "✓ Paid" : "⏳ Pending — Balance Due"}
                 </div>
@@ -326,7 +518,6 @@ function PaymentModal({ price, propertyTitle, propertyType, onClose, onPaymentSa
                 <button className="pm-done" onClick={onClose}>Done</button>
               </div>
             )}
-
           </div>
         </div>
       </div>
@@ -349,8 +540,9 @@ export default function PropertyDetails() {
   const [liked,         setLiked]         = useState(false);
   const [tab,           setTab]           = useState("overview");
   const [showPayment,   setShowPayment]   = useState(false);
+  const [showReview,    setShowReview]    = useState(false);
 
-  const [formData,   setFormData]   = useState({ name:"", email:"", phone:"", message:"" });
+  const [formData,   setFormData]   = useState({ name: "", email: "", phone: "", message: "" });
   const [submitting, setSubmitting] = useState(false);
   const [successMsg, setSuccessMsg] = useState("");
 
@@ -398,7 +590,7 @@ export default function PropertyDetails() {
     try {
       await api.post("/enquiry", { ...formData, property: id });
       setSuccessMsg("Enquiry sent successfully!");
-      setFormData({ name:"", email:"", phone:"", message:"" });
+      setFormData({ name: "", email: "", phone: "", message: "" });
     } catch (err) {
       console.error("Enquiry error:", err);
       alert("Failed to send enquiry");
@@ -409,10 +601,10 @@ export default function PropertyDetails() {
 
   if (loading) {
     return (
-      <div style={{ minHeight:"100vh", background:"#0d0d1a", display:"flex", alignItems:"center", justifyContent:"center" }}>
-        <div style={{ textAlign:"center" }}>
+      <div style={{ minHeight: "100vh", background: "#0d0d1a", display: "flex", alignItems: "center", justifyContent: "center" }}>
+        <div style={{ textAlign: "center" }}>
           <div className="pd-spinner" />
-          <p style={{ color:"rgba(255,255,255,0.45)", fontFamily:"'Inter',sans-serif", marginTop:16, fontSize:14 }}>Loading property...</p>
+          <p style={{ color: "rgba(255,255,255,0.45)", fontFamily: "'Inter',sans-serif", marginTop: 16, fontSize: 14 }}>Loading property...</p>
         </div>
         <style>{`.pd-spinner{width:40px;height:40px;border-radius:50%;margin:0 auto;border:3px solid rgba(124,58,237,0.15);border-top-color:#7c3aed;animation:pd-spin .8s linear infinite;}@keyframes pd-spin{to{transform:rotate(360deg)}}`}</style>
       </div>
@@ -421,8 +613,8 @@ export default function PropertyDetails() {
 
   if (!property) {
     return (
-      <div style={{ minHeight:"100vh", background:"#0d0d1a", display:"flex", alignItems:"center", justifyContent:"center" }}>
-        <p style={{ color:"#f87171", fontFamily:"'Inter',sans-serif" }}>Property not found.</p>
+      <div style={{ minHeight: "100vh", background: "#0d0d1a", display: "flex", alignItems: "center", justifyContent: "center" }}>
+        <p style={{ color: "#f87171", fontFamily: "'Inter',sans-serif" }}>Property not found.</p>
       </div>
     );
   }
@@ -435,8 +627,8 @@ export default function PropertyDetails() {
         .pd-root{min-height:100vh;background:#0d0d1a;font-family:'Inter',sans-serif;position:relative;overflow-x:hidden;}
         .pd-glow{position:fixed;top:0;left:50%;transform:translateX(-50%);width:800px;height:500px;background:rgba(139,92,246,0.13);border-radius:50%;filter:blur(130px);pointer-events:none;z-index:0;}
         .pd-glow2{position:fixed;bottom:-100px;right:-100px;width:500px;height:500px;background:rgba(109,40,217,0.08);border-radius:50%;filter:blur(100px);pointer-events:none;z-index:0;}
-        .pd-content{position:relative;z-index:1;max-width:1280px;margin:0 auto;padding:32px 20px 80px;}
-        .pd-navbar{position:sticky;top:0;z-index:50;background:rgba(13,13,26,0.85);backdrop-filter:blur(20px);border-bottom:1px solid rgba(255,255,255,0.07);}
+        .pd-content{position:relative;z-index:1;max-width:1280px;margin:0 auto;padding:96px 20px 80px;}
+        .pd-navbar{position:fixed;top:0;left:0;right:0;z-index:50;background:rgba(13,13,26,0.85);backdrop-filter:blur(20px);border-bottom:1px solid rgba(255,255,255,0.07);}
         .pd-navbar-inner{max-width:1280px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;padding:16px 20px;}
         .pd-nav-brand{font-family:'Playfair Display',serif;font-size:1.35rem;font-weight:700;color:#fff;letter-spacing:.01em;text-decoration:none;display:flex;align-items:center;gap:8px;}
         .pd-nav-brand em{font-style:normal;color:#a78bfa;}
@@ -491,9 +683,11 @@ export default function PropertyDetails() {
         .pd-price-row{display:flex;align-items:flex-end;justify-content:space-between;flex-wrap:wrap;gap:10px;padding:20px 20px 0;}
         .pd-price{font-family:'Playfair Display',serif;font-size:2.2rem;font-weight:700;color:#fff;line-height:1;}
         .pd-price-mo{font-size:1rem;color:#a78bfa;font-weight:400;margin-left:5px;}
+        .pd-action-row{display:flex;gap:10px;flex-wrap:wrap;align-items:center;}
         .pd-buy-btn{display:inline-flex;align-items:center;gap:8px;padding:12px 24px;border-radius:12px;background:linear-gradient(135deg,#7c3aed,#5b21b6);color:#fff;font-family:'Inter',sans-serif;font-size:14px;font-weight:600;cursor:pointer;border:none;transition:all .25s;box-shadow:0 4px 20px rgba(124,58,237,0.38);letter-spacing:.02em;white-space:nowrap;}
-        .pd-buy-btn:hover{transform:translateY(-2px);box-shadow:0 8px 30px rgba(124,58,237,0.52);background:linear-gradient(135deg,#6d28d9,#4c1d95);}
-        .pd-buy-btn:active{transform:translateY(0);}
+        .pd-buy-btn:hover{transform:translateY(-2px);box-shadow:0 8px 30px rgba(124,58,237,0.52);}
+        .pd-review-btn{display:inline-flex;align-items:center;gap:7px;padding:12px 20px;border-radius:12px;background:rgba(255,255,255,0.04);color:rgba(255,255,255,0.7);font-family:'Inter',sans-serif;font-size:13.5px;font-weight:500;cursor:pointer;border:1.5px solid rgba(255,255,255,0.12);transition:all .25s;white-space:nowrap;}
+        .pd-review-btn:hover{background:rgba(124,58,237,0.1);border-color:rgba(167,139,250,0.45);color:#a78bfa;transform:translateY(-2px);}
         .pd-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;padding:20px 20px 0;}
         @media(max-width:600px){.pd-stats{grid-template-columns:repeat(2,1fr);}}
         .pd-stat{background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.07);border-radius:16px;padding:16px 12px;display:flex;flex-direction:column;align-items:center;gap:7px;transition:border-color .3s,transform .3s,background .3s;cursor:default;}
@@ -523,7 +717,7 @@ export default function PropertyDetails() {
         .pd-gi:hover img{transform:scale(1.07);}
         .pd-gi::after{content:'';position:absolute;inset:0;border-radius:12px;background:rgba(124,58,237,0);transition:background .3s;}
         .pd-gi:hover::after{background:rgba(124,58,237,0.12);}
-        .pd-sidebar{display:flex;flex-direction:column;gap:16px;position:sticky;top:24px;}
+        .pd-sidebar{display:flex;flex-direction:column;gap:16px;position:sticky;top:80px;}
         .pd-enquiry-head{padding:22px 22px 16px;border-bottom:1px solid rgba(255,255,255,0.07);}
         .pd-enquiry-eyebrow{font-size:10px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:#a78bfa;margin-bottom:5px;}
         .pd-enquiry-title{font-family:'Playfair Display',serif;font-size:1.3rem;font-weight:600;color:#fff;}
@@ -535,7 +729,7 @@ export default function PropertyDetails() {
         .pd-submit{width:100%;padding:13px;background:#7c3aed;color:#fff;border:none;border-radius:12px;font-family:'Inter',sans-serif;font-size:14px;font-weight:500;cursor:pointer;transition:all .22s;display:flex;align-items:center;justify-content:center;gap:7px;letter-spacing:.02em;}
         .pd-submit:hover:not(:disabled){background:#6d28d9;transform:translateY(-1px);box-shadow:0 8px 24px rgba(124,58,237,0.3);}
         .pd-submit:disabled{opacity:.6;cursor:not-allowed;}
-        .pd-success{background:rgba(16,185,129,0.1);border:1px solid rgba(16,185,129,0.25);color:#6ee7b7;border-radius:10px;padding:10px 14px;font-size:13px;text-align:center;animation:pd-fadein .3s ease;}
+        .pd-success{background:rgba(16,185,129,0.1);border:1px solid rgba(16,185,129,0.25);color:#6ee7b7;border-radius:10px;padding:10px 14px;font-size:13px;text-align:center;}
         .pd-qcard-title{font-size:10px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:#a78bfa;margin-bottom:14px;padding:20px 22px 0;}
         .pd-drow{display:flex;justify-content:space-between;align-items:center;padding:9px 22px;border-bottom:1px solid rgba(255,255,255,0.06);font-size:13px;}
         .pd-drow:last-child{border-bottom:none;padding-bottom:20px;}
@@ -564,7 +758,15 @@ export default function PropertyDetails() {
           propertyTitle={property.title}
           propertyType={property.propertyType}
           onClose={() => setShowPayment(false)}
-          onPaymentSaved={() => console.log("Payment saved to DB")}
+          onPaymentSaved={() => console.log("Payment saved")}
+        />
+      )}
+
+      {showReview && (
+        <ReviewModal
+          propertyTitle={property.title}
+          propertyId={id}
+          onClose={() => setShowReview(false)}
         />
       )}
 
@@ -640,7 +842,7 @@ export default function PropertyDetails() {
 
                 <div className="pd-price-row">
                   <div>
-                    <div style={{ fontSize:10, fontWeight:600, letterSpacing:"0.1em", textTransform:"uppercase", color:"#a78bfa", marginBottom:4 }}>
+                    <div style={{ fontSize: 10, fontWeight: 600, letterSpacing: "0.1em", textTransform: "uppercase", color: "#a78bfa", marginBottom: 4 }}>
                       Asking Price
                     </div>
                     <div className="pd-price">
@@ -648,9 +850,15 @@ export default function PropertyDetails() {
                       {property.listingType === "rent" && <span className="pd-price-mo">/ month</span>}
                     </div>
                   </div>
-                  <button className="pd-buy-btn" onClick={() => setShowPayment(true)}>
-                    <CreditCard size={16} /> Buy Now
-                  </button>
+                  <div className="pd-action-row">
+                    <button className="pd-review-btn" type="button" onClick={() => setShowReview(true)}>
+                      <Star size={14} style={{ color: "#facc15" }} />
+                      Write a Review
+                    </button>
+                    <button className="pd-buy-btn" type="button" onClick={() => setShowPayment(true)}>
+                      <CreditCard size={16} /> Buy Now
+                    </button>
+                  </div>
                 </div>
 
                 <div className="pd-stats">
@@ -725,9 +933,9 @@ export default function PropertyDetails() {
                 </div>
                 <div className="pd-form">
                   {successMsg && <div className="pd-success">{successMsg}</div>}
-                  <input className="pd-input" type="text"  name="name"  placeholder="Your Name"          value={formData.name}    onChange={handleChange} required />
-                  <input className="pd-input" type="email" name="email" placeholder="Email Address"       value={formData.email}   onChange={handleChange} required />
-                  <input className="pd-input" type="text"  name="phone" placeholder="Phone Number"        value={formData.phone}   onChange={handleChange} required />
+                  <input className="pd-input" type="text"  name="name"    placeholder="Your Name"          value={formData.name}    onChange={handleChange} />
+                  <input className="pd-input" type="email" name="email"   placeholder="Email Address"       value={formData.email}   onChange={handleChange} />
+                  <input className="pd-input" type="text"  name="phone"   placeholder="Phone Number"        value={formData.phone}   onChange={handleChange} />
                   <textarea className="pd-textarea" name="message" placeholder="Your Message (optional)" rows="3" value={formData.message} onChange={handleChange} />
                   <button className="pd-submit" onClick={handleSubmit} disabled={submitting}>
                     <Send size={14} />{submitting ? "Sending..." : "Send Enquiry"}
@@ -735,7 +943,7 @@ export default function PropertyDetails() {
                 </div>
               </div>
 
-              <div className="pd-card" style={{ overflow:"hidden" }}>
+              <div className="pd-card" style={{ overflow: "hidden" }}>
                 <div className="pd-qcard-title">Property Details</div>
                 {[
                   ["Listing Type",  property.listingType],
@@ -751,7 +959,7 @@ export default function PropertyDetails() {
                 ))}
               </div>
 
-              <div className="pd-card" style={{ overflow:"hidden" }}>
+              <div className="pd-card" style={{ overflow: "hidden" }}>
                 <div className="pd-map-head"><div className="pd-map-tit">Location</div></div>
                 <div className="pd-map">
                   <div className="pd-map-grid" />
