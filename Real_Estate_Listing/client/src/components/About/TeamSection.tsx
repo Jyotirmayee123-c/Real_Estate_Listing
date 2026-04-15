@@ -10,6 +10,7 @@ const teamMembers = [
     expertise: ["React", "Next.js", "UI Design"],
     bio: "Transforms complex property data into seamless digital experiences that clients love navigating.",
     image: "/Images/team-1.jpg",
+    initials: "RB",
     index: "01",
   },
   {
@@ -18,6 +19,7 @@ const teamMembers = [
     expertise: ["Node.js", "MongoDB", "System Design"],
     bio: "The engine under the hood — ensures every search, booking, and transaction runs flawlessly.",
     image: "/Images/team-2.jpg",
+    initials: "SR",
     index: "02",
   },
   {
@@ -26,6 +28,7 @@ const teamMembers = [
     expertise: ["MERN", "DevOps", "Integrations"],
     bio: "Bridges product and infrastructure, keeping the platform fast, reliable, and always evolving.",
     image: "/Images/team-3.jpg",
+    initials: "AK",
     index: "03",
   },
   {
@@ -34,9 +37,23 @@ const teamMembers = [
     expertise: ["Architecture", "Strategy", "Vision"],
     bio: "Sets the technical direction and ensures every feature serves one goal: making home buying easier.",
     image: "/Images/team-4.jpg",
+    initials: "SD",
     index: "04",
   },
 ];
+
+function MemberAvatar({ initials }: { initials: string }) {
+  return (
+    <div className="w-full h-full flex items-center justify-center bg-purple-900/40">
+      <div
+        style={{ width: 96, height: 96, borderRadius: "50%" }}
+        className="flex items-center justify-center bg-purple-600/30 border-2 border-purple-500/50 text-purple-300 font-bold text-4xl select-none"
+      >
+        {initials}
+      </div>
+    </div>
+  );
+}
 
 export default function TeamSection() {
   return (
@@ -70,11 +87,18 @@ export default function TeamSection() {
             >
               <div className="relative h-56 xs:h-60 sm:h-72 md:h-80 overflow-hidden">
                 <div className="absolute inset-0 bg-gradient-to-t from-[#252544] via-transparent to-transparent z-10" />
+
+                {/* Initials avatar — replace with <img> below once photos are ready */}
+                <MemberAvatar initials={m.initials} />
+
+                {/* Uncomment when photo is available:
                 <img
                   src={m.image}
                   alt={m.name}
                   className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110"
                 />
+                */}
+
                 <span className="absolute top-4 right-4 text-5xl font-bold text-purple-500/10 leading-none select-none z-20">
                   {m.index}
                 </span>

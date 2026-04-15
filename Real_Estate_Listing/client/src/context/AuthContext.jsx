@@ -10,12 +10,16 @@ export const AuthProvider = ({ children }) => {
   useEffect(() => {
     const storedUser = localStorage.getItem('user');
     const storedToken = localStorage.getItem('token');
-    
+
     if (storedUser && storedToken) {
       setUser(JSON.parse(storedUser));
     }
     setLoading(false);
   }, []);
+
+  // ── Helper: extract the user object regardless of response shape ──
+  // Handles both: { name, email, token, role } and { token, user: { name, email, role } }
+  const extractUser = (data) => data?.user || data;
 
   // Login Function
   const login = async (email, password) => {
@@ -32,10 +36,13 @@ export const AuthProvider = ({ children }) => {
         throw new Error(data.message || 'Login failed');
       }
 
-      // Save to local storage and state
-      localStorage.setItem('token', data.token);
-      localStorage.setItem('user', JSON.stringify(data));
-      setUser(data);
+      const userData = extractUser(data);
+      const token = data.token || userData.token;
+
+      localStorage.setItem('token', token);
+      localStorage.setItem('user', JSON.stringify(userData));
+      setUser(userData);
+
       return { success: true };
     } catch (error) {
       return { success: false, message: error.message };
@@ -57,10 +64,13 @@ export const AuthProvider = ({ children }) => {
         throw new Error(data.message || 'Registration failed');
       }
 
-      // Automatically login after register
-      localStorage.setItem('token', data.token);
-      localStorage.setItem('user', JSON.stringify(data));
-      setUser(data);
+      const userData = extractUser(data);
+      const token = data.token || userData.token;
+
+      localStorage.setItem('token', token);
+      localStorage.setItem('user', JSON.stringify(userData));
+      setUser(userData);
+
       return { success: true };
     } catch (error) {
       return { success: false, message: error.message };

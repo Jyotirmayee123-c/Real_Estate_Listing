@@ -10,6 +10,22 @@ const achievements = [
   { number: "3", detail: "City Expansions Planned by 2026" },
 ];
 
+function FounderAvatar() {
+  return (
+    <div className="w-full h-full flex items-center justify-center bg-purple-900/40">
+      <div className="flex flex-col items-center gap-3">
+        <div
+          style={{ width: 120, height: 120, borderRadius: "50%" }}
+          className="flex items-center justify-center bg-purple-600/30 border-2 border-purple-500/50 text-purple-300 font-bold text-5xl select-none"
+        >
+          JP
+        </div>
+        <p className="text-purple-400 text-sm tracking-widest uppercase">Founder & CEO</p>
+      </div>
+    </div>
+  );
+}
+
 export default function FounderSection() {
   return (
     <section className="relative bg-gradient-to-b from-[#1a1a2e] to-[#252544] py-12 xs:py-14 sm:py-16 md:py-20 lg:py-24 px-4 sm:px-6 md:px-8">
@@ -35,17 +51,24 @@ export default function FounderSection() {
           transition={{ duration: 0.6 }}
         >
           <div className="grid grid-cols-1 lg:grid-cols-12">
-            {/* Image */}
+            {/* Avatar / Image area */}
             <div className="lg:col-span-4 relative">
               <div className="absolute top-4 left-4 w-14 h-14 border-t-2 border-l-2 border-purple-600/50 rounded-tl-xl z-10" />
               <div className="absolute bottom-4 right-4 w-14 h-14 border-b-2 border-r-2 border-purple-600/50 rounded-br-xl z-10" />
+
               <div className="relative h-64 xs:h-72 sm:h-80 lg:h-full min-h-[420px]">
+                {/* Monogram placeholder — replace the block below with <img> once you have the photo */}
+                <FounderAvatar />
+
+                {/* Uncomment and replace src when photo is ready:
                 <img
-                  src="/Images/Assets/tatu.jpeg"
+                  src="/path/to/jyotirmayee-panda.jpg"
                   alt="Jyotirmayee Panda"
                   className="w-full h-full object-cover"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-[#252544] via-transparent to-transparent lg:bg-gradient-to-r lg:from-transparent lg:to-[#252544]/60" />
+                */}
+
                 <div className="absolute bottom-0 left-0 right-0 p-5 sm:p-6 lg:hidden">
                   <p className="text-white font-bold text-xl sm:text-2xl">Jyotirmayee Panda</p>
                   <p className="text-purple-400 text-sm font-medium mt-1">Founder &amp; CEO</p>

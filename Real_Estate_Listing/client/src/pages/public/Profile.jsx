@@ -1,402 +1,362 @@
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { useAuth } from "../../context/AuthContext";
-import {
-  User,
-  Mail,
-  Phone,
-  MapPin,
-  LogOut,
-  Edit2,
-  Save,
-  X,
-  Home,
-  Heart,
-  Bell,
-  Shield,
-} from "lucide-react";
+import { useState, useEffect, useRef } from 'react';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
+import { Menu, X, ChevronRight, User, LogOut, LayoutDashboard, ChevronDown } from 'lucide-react';
 
-// ── Mock saved properties ────────────────────────────────────
-const MOCK_PROPERTIES = [
-  {
-    id: 1,
-    title: "3BHK Luxury Apartment",
-    location: "Patia, Bhubaneswar",
-    price: "₹85 Lakhs",
-    type: "Apartment",
-    status: "Available",
-    image: "https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?w=400&q=80",
-  },
-  {
-    id: 2,
-    title: "2BHK Modern Flat",
-    location: "Nayapalli, Bhubaneswar",
-    price: "₹52 Lakhs",
-    type: "Flat",
-    status: "Available",
-    image: "https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?w=400&q=80",
-  },
-  {
-    id: 3,
-    title: "Independent Villa",
-    location: "Saheed Nagar, Bhubaneswar",
-    price: "₹1.4 Cr",
-    type: "Villa",
-    status: "Sold",
-    image: "https://images.unsplash.com/photo-1564013799919-ab600027ffc6?w=400&q=80",
-  },
+const navLinks = [
+  { to: '/',           label: 'Home'       },
+  { to: '/About',      label: 'About'      },
+  { to: '/properties', label: 'Properties' },
+  { to: '/services',   label: 'Services'   },
+  { to: '/contacts',   label: 'Contacts'   },
 ];
 
-const Profile = () => {
-  const { user, logout, updateProfile } = useAuth();
+/* ── House SVG logo ── */
+const HouseLogo = ({ size = 28 }) => (
+  <svg
+    width={size}
+    height={size}
+    viewBox="0 0 32 32"
+    fill="none"
+    xmlns="http://www.w3.org/2000/svg"
+    aria-hidden="true"
+  >
+    <path d="M4 14L16 3L28 14" stroke="#a855f7" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
+    <rect x="6" y="13" width="20" height="16" rx="1.5" fill="#a855f720" stroke="#a855f7" strokeWidth="2" />
+    <rect x="13" y="20" width="6" height="9" rx="1" fill="#a855f7" opacity="0.85" />
+    <rect x="8" y="16" width="4" height="4" rx="0.8" fill="#a855f7" opacity="0.6" />
+    <rect x="20" y="16" width="4" height="4" rx="0.8" fill="#a855f7" opacity="0.6" />
+  </svg>
+);
+
+/* ── Profile Dropdown ── */
+const ProfileDropdown = ({ user, logout }) => {
+  const [open, setOpen] = useState(false);
+  const ref = useRef(null);
   const navigate = useNavigate();
 
-  const [activeTab, setActiveTab] = useState("profile");
-  const [editing, setEditing] = useState(false);
-  const [saving, setSaving] = useState(false);
-  const [saveSuccess, setSaveSuccess] = useState(false);
-  const [error, setError] = useState("");
-
-  const [form, setForm] = useState({
-    name: user?.name || "",
-    email: user?.email || "",
-    phone: user?.phone || "",
-    city: user?.city || "Bhubaneswar",
-  });
+  // Close on outside click
+  useEffect(() => {
+    const handler = (e) => {
+      if (ref.current && !ref.current.contains(e.target)) setOpen(false);
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, []);
 
   const handleLogout = () => {
+    setOpen(false);
     logout();
-    navigate("/login", { replace: true });
+    navigate('/login');
   };
 
-  const handleSave = async () => {
-    setError("");
-    if (!form.name.trim() || form.name.trim().length < 2) {
-      setError("Name must be at least 2 characters.");
-      return;
-    }
-    setSaving(true);
-    try {
-      const res = await fetch("/api/profile", {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(form),
-      });
-      const data = await res.json();
-      if (res.ok) {
-        updateProfile(data.user || form);
-        setSaveSuccess(true);
-        setEditing(false);
-        setTimeout(() => setSaveSuccess(false), 3000);
-      } else {
-        setError(data.message || "Failed to update profile.");
-      }
-    } catch {
-      // If no backend yet, just update locally
-      updateProfile(form);
-      setSaveSuccess(true);
-      setEditing(false);
-      setTimeout(() => setSaveSuccess(false), 3000);
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  const tabs = [
-    { id: "profile", label: "Profile", icon: User },
-    { id: "saved", label: "Saved Properties", icon: Heart },
-    { id: "notifications", label: "Notifications", icon: Bell },
-  ];
+  // ✅ Show the actual name from user object (not role/username)
+  // Supports: user.name, user.fullName, user.displayName — adjust as per your auth context
+  const displayName = user?.name || user?.fullName || user?.displayName || user?.username || 'User';
+  const firstName = displayName.split(' ')[0];
+  const initial = firstName[0]?.toUpperCase() || 'U';
 
   return (
-    <div className="min-h-screen bg-[#0d0d1a] relative overflow-hidden">
-      {/* Background glow */}
-      <div className="absolute inset-0 pointer-events-none">
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[700px] h-[400px] bg-purple-700/10 rounded-full blur-[140px]" />
-      </div>
+    <div className="relative" ref={ref}>
+      {/* ✅ Trigger button — shows "Hi, Rakhi" using actual name */}
+      <button
+        onClick={() => setOpen((prev) => !prev)}
+        className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg hover:bg-purple-600/10 transition-all duration-200 group"
+      >
+        {/* Avatar circle with first initial */}
+        <div className="w-7 h-7 rounded-full bg-purple-600/30 border border-purple-500/40 flex items-center justify-center text-purple-300 text-xs font-bold">
+          {initial}
+        </div>
+        <span className="text-sm text-gray-300 group-hover:text-white transition-colors">
+          Hi,{' '}
+          <span className="text-purple-400 font-semibold">{firstName}</span>
+        </span>
+        <ChevronDown
+          size={14}
+          className={`text-gray-500 transition-transform duration-200 ${open ? 'rotate-180' : ''}`}
+        />
+      </button>
 
-      {/* Navbar */}
-      <nav className="relative z-10 border-b border-white/[0.07] bg-white/[0.02] backdrop-blur-sm">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
-          <div className="inline-flex items-center gap-2 bg-purple-500/10 border border-purple-500/30 text-purple-300 text-xs font-medium tracking-widest uppercase px-3 py-1.5 rounded-full">
-            <span className="w-1.5 h-1.5 bg-purple-400 rounded-full inline-block" />
-            Kalinga Homes
-          </div>
-          <div className="flex items-center gap-3">
-            {user?.role === "admin" && (
-              <button
-                onClick={() => navigate("/admin")}
-                className="flex items-center gap-1.5 text-xs text-purple-400 hover:text-purple-300 border border-purple-500/30 px-3 py-1.5 rounded-full transition-colors"
-              >
-                <Shield size={12} />
-                Admin Panel
-              </button>
+      {/* ✅ Dropdown panel */}
+      {open && (
+        <div
+          className="absolute right-0 top-full mt-2 w-56 rounded-xl overflow-hidden shadow-2xl shadow-black/40 border border-purple-900/40 z-50"
+          style={{ background: '#1e1e38' }}
+        >
+          {/* User info header — shows full name + email */}
+          <div className="px-4 py-3 border-b border-white/[0.07]">
+            <div className="flex items-center gap-2.5 mb-1">
+              <div className="w-8 h-8 rounded-full bg-purple-600/30 border border-purple-500/40 flex items-center justify-center text-purple-300 text-sm font-bold shrink-0">
+                {initial}
+              </div>
+              <div className="min-w-0">
+                <p className="text-white text-sm font-semibold truncate">{displayName}</p>
+                <p className="text-gray-500 text-xs truncate">{user?.email}</p>
+              </div>
+            </div>
+            {user?.role && (
+              <span className="inline-block mt-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-purple-600/20 text-purple-300 border border-purple-500/30 capitalize">
+                {user.role}
+              </span>
             )}
+          </div>
+
+          {/* Menu items */}
+          <div className="py-1.5">
+            <Link
+              to="/profile"
+              onClick={() => setOpen(false)}
+              className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-300 hover:text-white hover:bg-purple-600/15 transition-all duration-150"
+            >
+              <User size={14} className="text-purple-400" />
+              My Profile
+            </Link>
+
+            {user?.role === 'admin' && (
+              <Link
+                to="/admin"
+                onClick={() => setOpen(false)}
+                className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-300 hover:text-white hover:bg-purple-600/15 transition-all duration-150"
+              >
+                <LayoutDashboard size={14} className="text-purple-400" />
+                Admin Panel
+              </Link>
+            )}
+          </div>
+
+          {/* Logout */}
+          <div className="border-t border-white/[0.07] py-1.5">
             <button
               onClick={handleLogout}
-              className="flex items-center gap-1.5 text-xs text-white/50 hover:text-red-400 border border-white/10 hover:border-red-500/30 px-3 py-1.5 rounded-full transition-all duration-200"
+              className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-red-400 hover:text-red-300 hover:bg-red-500/10 transition-all duration-150"
             >
-              <LogOut size={12} />
+              <LogOut size={14} />
               Logout
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+const Navbar = () => {
+  const { user, logout } = useAuth();
+  const location = useLocation();
+  const [menuOpen, setMenuOpen] = useState(false);
+
+  useEffect(() => { setMenuOpen(false); }, [location.pathname]);
+
+  useEffect(() => {
+    document.body.style.overflow = menuOpen ? 'hidden' : '';
+    return () => { document.body.style.overflow = ''; };
+  }, [menuOpen]);
+
+  const isActive = (path) =>
+    path === '/' ? location.pathname === '/' : location.pathname.startsWith(path);
+
+  const Brand = ({ onClick }) => (
+    <Link
+      to="/"
+      onClick={onClick}
+      className="flex items-center gap-2 flex-shrink-0 group"
+    >
+      <span className="transition-transform duration-200 group-hover:scale-110">
+        <HouseLogo size={28} />
+      </span>
+      <span className="text-xl font-black text-white leading-none">
+        Kalinga <span className="text-purple-500">Homes</span>
+      </span>
+    </Link>
+  );
+
+  return (
+    <>
+      {/* ── Top bar ── */}
+      <nav className="fixed top-0 left-0 right-0 z-50 bg-[#1a1a2e]/95 backdrop-blur-md border-b border-purple-900/30 shadow-lg shadow-black/20">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-between items-center h-16">
+
+            <Brand />
+
+            {/* ✅ Desktop nav */}
+            <div className="hidden md:flex items-center space-x-1">
+              {navLinks.map(({ to, label }) => (
+                <Link
+                  key={to}
+                  to={to}
+                  className={`px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
+                    isActive(to)
+                      ? 'text-white bg-purple-600/20 border border-purple-500/40 font-semibold'
+                      : 'text-gray-400 hover:text-white hover:bg-purple-600/10'
+                  }`}
+                >
+                  {label}
+                </Link>
+              ))}
+
+              {/* ✅ Shows ProfileDropdown with real name when logged in */}
+              {user ? (
+                <ProfileDropdown user={user} logout={logout} />
+              ) : (
+                <>
+                  <Link
+                    to="/login"
+                    className={`px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
+                      isActive('/login')
+                        ? 'text-white bg-purple-600/20 border border-purple-500/40 font-semibold'
+                        : 'text-gray-400 hover:text-white hover:bg-purple-600/10'
+                    }`}
+                  >
+                    Login
+                  </Link>
+                  <Link
+                    to="/register"
+                    className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-1.5 rounded-lg text-sm font-semibold transition-all duration-200 shadow-lg shadow-purple-900/30"
+                  >
+                    Register
+                  </Link>
+                </>
+              )}
+            </div>
+
+            {/* Mobile hamburger */}
+            <button
+              onClick={() => setMenuOpen((prev) => !prev)}
+              className="md:hidden flex items-center justify-center w-10 h-10 rounded-lg text-gray-300 hover:text-white hover:bg-purple-600/20 transition-all duration-200"
+              aria-label="Toggle menu"
+            >
+              {menuOpen ? <X size={22} /> : <Menu size={22} />}
             </button>
           </div>
         </div>
       </nav>
 
-      <div className="relative z-10 max-w-6xl mx-auto px-4 sm:px-6 py-10">
-        {/* Header */}
-        <div className="flex items-center gap-5 mb-10">
-          <div className="w-16 h-16 rounded-2xl bg-purple-600/20 border border-purple-500/30 flex items-center justify-center text-2xl font-bold text-purple-300 uppercase shrink-0">
-            {user?.name?.[0] || "U"}
-          </div>
-          <div>
-            <h1
-              className="text-white text-2xl sm:text-3xl font-bold leading-tight"
-              style={{ fontFamily: "'Playfair Display', serif" }}
-            >
-              {user?.name || "Welcome"}
-            </h1>
-            <p className="text-white/40 text-sm mt-0.5">{user?.email}</p>
-          </div>
+      {/* ── Mobile drawer overlay ── */}
+      {menuOpen && (
+        <div
+          className="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm md:hidden"
+          onClick={() => setMenuOpen(false)}
+        />
+      )}
+
+      {/* ── Mobile drawer ── */}
+      <div
+        className={`fixed top-0 right-0 z-50 h-full w-72 max-w-[85vw] bg-[#1a1a2e] border-l border-purple-900/30 shadow-2xl transform transition-transform duration-300 ease-in-out md:hidden ${
+          menuOpen ? 'translate-x-0' : 'translate-x-full'
+        }`}
+      >
+        {/* Drawer header */}
+        <div className="flex items-center justify-between px-5 h-16 border-b border-purple-900/30">
+          <Brand onClick={() => setMenuOpen(false)} />
+          <button
+            onClick={() => setMenuOpen(false)}
+            className="w-9 h-9 flex items-center justify-center rounded-lg text-gray-400 hover:text-white hover:bg-purple-600/20 transition-all"
+          >
+            <X size={20} />
+          </button>
         </div>
 
-        {/* Tabs */}
-        <div className="flex gap-1 mb-8 bg-white/[0.03] border border-white/[0.07] rounded-xl p-1 w-fit">
-          {tabs.map(({ id, label, icon: Icon }) => (
-            <button
-              key={id}
-              onClick={() => setActiveTab(id)}
-              className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-medium transition-all duration-200 ${
-                activeTab === id
-                  ? "bg-purple-600 text-white"
-                  : "text-white/40 hover:text-white/70"
+        {/* ✅ User info in drawer — shows real name */}
+        {user && (
+          <div className="px-5 py-4 border-b border-purple-900/20 flex items-center gap-3">
+            <div className="w-9 h-9 rounded-full bg-purple-600/30 border border-purple-500/40 flex items-center justify-center text-purple-300 text-sm font-bold shrink-0">
+              {(user?.name || user?.fullName || user?.displayName || user?.username || 'U')[0]?.toUpperCase()}
+            </div>
+            <div className="min-w-0">
+              <p className="text-white text-sm font-semibold truncate">
+                {user?.name || user?.fullName || user?.displayName || user?.username}
+              </p>
+              <p className="text-gray-500 text-xs truncate">{user?.email}</p>
+            </div>
+          </div>
+        )}
+
+        {/* Nav links */}
+        <div className="px-3 py-4 flex flex-col gap-1">
+          {navLinks.map(({ to, label }) => (
+            <Link
+              key={to}
+              to={to}
+              className={`flex items-center justify-between px-4 py-3 rounded-xl text-sm font-medium transition-all duration-200 ${
+                isActive(to)
+                  ? 'text-white bg-purple-600/20 border border-purple-500/40 font-semibold'
+                  : 'text-gray-400 hover:text-white hover:bg-purple-600/10'
               }`}
             >
-              <Icon size={13} />
-              <span className="hidden sm:inline">{label}</span>
-            </button>
+              {label}
+              <ChevronRight size={15} className="opacity-40" />
+            </Link>
           ))}
-        </div>
 
-        {/* ── PROFILE TAB ── */}
-        {activeTab === "profile" && (
-          <div className="bg-white/[0.03] border border-white/[0.07] rounded-2xl p-6 sm:p-8 max-w-2xl">
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="text-white font-semibold text-lg">Personal Information</h2>
-              {!editing ? (
-                <button
-                  onClick={() => setEditing(true)}
-                  className="flex items-center gap-1.5 text-xs text-purple-400 hover:text-purple-300 border border-purple-500/30 px-3 py-1.5 rounded-full transition-colors"
-                >
-                  <Edit2 size={12} />
-                  Edit
-                </button>
-              ) : (
-                <div className="flex gap-2">
-                  <button
-                    onClick={() => { setEditing(false); setError(""); }}
-                    className="flex items-center gap-1.5 text-xs text-white/40 hover:text-white/70 border border-white/10 px-3 py-1.5 rounded-full transition-colors"
-                  >
-                    <X size={12} />
-                    Cancel
-                  </button>
-                  <button
-                    onClick={handleSave}
-                    disabled={saving}
-                    className="flex items-center gap-1.5 text-xs text-white bg-purple-600 hover:bg-purple-700 disabled:opacity-50 px-3 py-1.5 rounded-full transition-colors"
-                  >
-                    <Save size={12} />
-                    {saving ? "Saving..." : "Save"}
-                  </button>
-                </div>
-              )}
-            </div>
+          {user ? (
+            <>
+              <Link
+                to="/profile"
+                onClick={() => setMenuOpen(false)}
+                className={`flex items-center justify-between px-4 py-3 rounded-xl text-sm font-medium transition-all duration-200 ${
+                  isActive('/profile')
+                    ? 'text-white bg-purple-600/20 border border-purple-500/40'
+                    : 'text-gray-400 hover:text-white hover:bg-purple-600/10'
+                }`}
+              >
+                <span className="flex items-center gap-2">
+                  <User size={14} className="text-purple-400" />
+                  My Profile
+                </span>
+                <ChevronRight size={15} className="opacity-40" />
+              </Link>
 
-            {/* Success */}
-            {saveSuccess && (
-              <div className="mb-5 bg-green-500/10 border border-green-500/30 text-green-400 text-sm px-4 py-3 rounded-xl">
-                ✓ Profile updated successfully!
-              </div>
-            )}
-
-            {/* Error */}
-            {error && (
-              <div className="mb-5 bg-red-500/10 border border-red-500/30 text-red-400 text-sm px-4 py-3 rounded-xl">
-                ⚠ {error}
-              </div>
-            )}
-
-            <div className="space-y-5">
-              {/* Name */}
-              <div>
-                <label className="block text-white/50 text-xs font-medium tracking-wide uppercase mb-2">
-                  Full Name
-                </label>
-                {editing ? (
-                  <div className="relative flex items-center">
-                    <User className="absolute left-4 text-white/30" size={14} />
-                    <input
-                      type="text"
-                      value={form.name}
-                      onChange={(e) => setForm({ ...form, name: e.target.value })}
-                      className="w-full bg-white/[0.05] border border-white/10 text-white text-sm rounded-xl pl-10 pr-4 py-3 outline-none focus:border-purple-500/60 transition-all duration-200"
-                    />
-                  </div>
-                ) : (
-                  <div className="flex items-center gap-3 text-white/80 text-sm">
-                    <User size={14} className="text-white/30" />
-                    {user?.name || "—"}
-                  </div>
-                )}
-              </div>
-
-              {/* Email */}
-              <div>
-                <label className="block text-white/50 text-xs font-medium tracking-wide uppercase mb-2">
-                  Email Address
-                </label>
-                <div className="flex items-center gap-3 text-white/80 text-sm">
-                  <Mail size={14} className="text-white/30" />
-                  {user?.email || "—"}
-                  <span className="text-xs text-white/30">(cannot be changed)</span>
-                </div>
-              </div>
-
-              {/* Phone */}
-              <div>
-                <label className="block text-white/50 text-xs font-medium tracking-wide uppercase mb-2">
-                  Phone Number
-                </label>
-                {editing ? (
-                  <div className="relative flex items-center">
-                    <Phone className="absolute left-4 text-white/30" size={14} />
-                    <input
-                      type="tel"
-                      placeholder="+91 XXXXX XXXXX"
-                      value={form.phone}
-                      onChange={(e) => setForm({ ...form, phone: e.target.value })}
-                      className="w-full bg-white/[0.05] border border-white/10 text-white placeholder-white/25 text-sm rounded-xl pl-10 pr-4 py-3 outline-none focus:border-purple-500/60 transition-all duration-200"
-                    />
-                  </div>
-                ) : (
-                  <div className="flex items-center gap-3 text-white/80 text-sm">
-                    <Phone size={14} className="text-white/30" />
-                    {user?.phone || "Not added"}
-                  </div>
-                )}
-              </div>
-
-              {/* City */}
-              <div>
-                <label className="block text-white/50 text-xs font-medium tracking-wide uppercase mb-2">
-                  City
-                </label>
-                {editing ? (
-                  <div className="relative flex items-center">
-                    <MapPin className="absolute left-4 text-white/30" size={14} />
-                    <input
-                      type="text"
-                      placeholder="Your city"
-                      value={form.city}
-                      onChange={(e) => setForm({ ...form, city: e.target.value })}
-                      className="w-full bg-white/[0.05] border border-white/10 text-white placeholder-white/25 text-sm rounded-xl pl-10 pr-4 py-3 outline-none focus:border-purple-500/60 transition-all duration-200"
-                    />
-                  </div>
-                ) : (
-                  <div className="flex items-center gap-3 text-white/80 text-sm">
-                    <MapPin size={14} className="text-white/30" />
-                    {user?.city || "Bhubaneswar"}
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* ── SAVED PROPERTIES TAB ── */}
-        {activeTab === "saved" && (
-          <div>
-            <h2 className="text-white font-semibold text-lg mb-6">Saved Properties</h2>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-              {MOCK_PROPERTIES.map((property) => (
-                <div
-                  key={property.id}
-                  className="bg-white/[0.03] border border-white/[0.07] rounded-2xl overflow-hidden hover:border-purple-500/30 transition-all duration-200 group"
-                >
-                  <div className="relative h-44 overflow-hidden">
-                    <img
-                      src={property.image}
-                      alt={property.title}
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                    />
-                    <div className="absolute top-3 right-3">
-                      <span
-                        className={`text-xs px-2 py-1 rounded-full font-medium ${
-                          property.status === "Available"
-                            ? "bg-green-500/20 text-green-400 border border-green-500/30"
-                            : "bg-red-500/20 text-red-400 border border-red-500/30"
-                        }`}
-                      >
-                        {property.status}
-                      </span>
-                    </div>
-                    <button className="absolute top-3 left-3 w-7 h-7 rounded-full bg-white/10 backdrop-blur-sm flex items-center justify-center hover:bg-red-500/20 transition-colors">
-                      <Heart size={13} className="text-red-400 fill-red-400" />
-                    </button>
-                  </div>
-                  <div className="p-4">
-                    <p className="text-white font-medium text-sm mb-1">{property.title}</p>
-                    <div className="flex items-center gap-1.5 text-white/40 text-xs mb-3">
-                      <MapPin size={11} />
-                      {property.location}
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <span className="text-purple-400 font-semibold text-sm">{property.price}</span>
-                      <span className="text-white/30 text-xs border border-white/10 px-2 py-0.5 rounded-full">
-                        {property.type}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* ── NOTIFICATIONS TAB ── */}
-        {activeTab === "notifications" && (
-          <div className="bg-white/[0.03] border border-white/[0.07] rounded-2xl p-6 sm:p-8 max-w-2xl">
-            <h2 className="text-white font-semibold text-lg mb-6">Notifications</h2>
-            <div className="space-y-3">
-              {[
-                { title: "New property in Patia", time: "2 hours ago", read: false },
-                { title: "Price drop: 3BHK in Nayapalli", time: "1 day ago", read: false },
-                { title: "Your profile was updated", time: "3 days ago", read: true },
-                { title: "Welcome to Kalinga Homes!", time: "1 week ago", read: true },
-              ].map((notif, i) => (
-                <div
-                  key={i}
-                  className={`flex items-start gap-4 p-4 rounded-xl border transition-colors ${
-                    !notif.read
-                      ? "bg-purple-500/[0.05] border-purple-500/20"
-                      : "bg-white/[0.02] border-white/[0.05]"
+              {user.role === 'admin' && (
+                <Link
+                  to="/admin"
+                  onClick={() => setMenuOpen(false)}
+                  className={`flex items-center justify-between px-4 py-3 rounded-xl text-sm font-semibold transition-all border ${
+                    isActive('/admin')
+                      ? 'text-purple-300 bg-purple-600/20 border-purple-500/70'
+                      : 'text-purple-400 border-purple-500/30 hover:bg-purple-600/10'
                   }`}
                 >
-                  <div className={`w-2 h-2 rounded-full mt-1.5 shrink-0 ${!notif.read ? "bg-purple-400" : "bg-white/20"}`} />
-                  <div className="flex-1">
-                    <p className={`text-sm ${!notif.read ? "text-white" : "text-white/50"}`}>
-                      {notif.title}
-                    </p>
-                    <p className="text-white/30 text-xs mt-0.5">{notif.time}</p>
-                  </div>
-                </div>
-              ))}
+                  <span className="flex items-center gap-2">
+                    <LayoutDashboard size={14} />
+                    Admin Panel
+                  </span>
+                  <ChevronRight size={15} className="opacity-40" />
+                </Link>
+              )}
+
+              <button
+                onClick={() => { logout(); setMenuOpen(false); }}
+                className="mt-2 w-full flex items-center gap-2 px-4 py-3 rounded-xl text-sm font-semibold bg-red-500/10 text-red-400 border border-red-500/30 hover:bg-red-500/20 transition-all"
+              >
+                <LogOut size={14} />
+                Logout
+              </button>
+            </>
+          ) : (
+            <div className="flex flex-col gap-2 mt-3">
+              <Link
+                to="/login"
+                className={`px-4 py-3 rounded-xl text-sm font-medium text-center transition-all ${
+                  isActive('/login')
+                    ? 'text-white bg-purple-600/20 border border-purple-500/40'
+                    : 'text-gray-400 border border-purple-900/30 hover:text-white hover:bg-purple-600/10'
+                }`}
+              >
+                Login
+              </Link>
+              <Link
+                to="/register"
+                className="px-4 py-3 rounded-xl text-sm font-semibold text-center bg-purple-600 hover:bg-purple-700 text-white transition-all shadow-lg shadow-purple-900/30"
+              >
+                Register
+              </Link>
             </div>
-          </div>
-        )}
+          )}
+        </div>
       </div>
-    </div>
+    </>
   );
 };
 
-export default Profile;
+export default Navbar;

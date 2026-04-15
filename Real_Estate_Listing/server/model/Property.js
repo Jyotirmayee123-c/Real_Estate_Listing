@@ -30,6 +30,12 @@ const PropertySchema = new mongoose.Schema(
       required: true,
     },
 
+    suitableFor: {
+      type: [String],
+      enum: ["family", "bachelor", "other"],
+      default: ["other"],
+    },
+
     city: {
       type: String,
       required: true,

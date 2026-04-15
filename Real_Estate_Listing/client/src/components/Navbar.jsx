@@ -1,7 +1,7 @@
-import { useState, useEffect } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { useState, useEffect, useRef } from 'react';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { Menu, X, ChevronRight } from 'lucide-react';
+import { Menu, X, ChevronRight, User, LogOut, LayoutDashboard, ChevronDown } from 'lucide-react';
 
 const navLinks = [
   { to: '/',           label: 'Home'       },
@@ -21,7 +21,6 @@ const HouseLogo = ({ size = 28 }) => (
     xmlns="http://www.w3.org/2000/svg"
     aria-hidden="true"
   >
-    {/* Roof */}
     <path
       d="M4 14L16 3L28 14"
       stroke="#a855f7"
@@ -29,34 +28,138 @@ const HouseLogo = ({ size = 28 }) => (
       strokeLinecap="round"
       strokeLinejoin="round"
     />
-    {/* Walls */}
-    <rect
-      x="6" y="13" width="20" height="16" rx="1.5"
-      fill="#a855f720"
-      stroke="#a855f7"
-      strokeWidth="2"
-    />
-    {/* Door */}
-    <rect
-      x="13" y="20" width="6" height="9" rx="1"
-      fill="#a855f7"
-      opacity="0.85"
-    />
-    {/* Left window */}
-    <rect
-      x="8" y="16" width="4" height="4" rx="0.8"
-      fill="#a855f7"
-      opacity="0.6"
-    />
-    {/* Right window */}
-    <rect
-      x="20" y="16" width="4" height="4" rx="0.8"
-      fill="#a855f7"
-      opacity="0.6"
-    />
+    <rect x="6" y="13" width="20" height="16" rx="1.5" fill="#a855f720" stroke="#a855f7" strokeWidth="2" />
+    <rect x="13" y="20" width="6" height="9" rx="1" fill="#a855f7" opacity="0.85" />
+    <rect x="8" y="16" width="4" height="4" rx="0.8" fill="#a855f7" opacity="0.6" />
+    <rect x="20" y="16" width="4" height="4" rx="0.8" fill="#a855f7" opacity="0.6" />
   </svg>
 );
 
+/* ══════════════════════════════════════════
+   Profile Dropdown  — Desktop only
+   Click "Hi, Rakhi ▾" → shows:
+     • User info (avatar + name + email)
+     • My Profile
+     • Admin Panel  (admin only)
+     • Logout
+══════════════════════════════════════════ */
+const ProfileDropdown = ({ user, logout }) => {
+  const [open, setOpen] = useState(false);
+  const ref = useRef(null);
+  const navigate = useNavigate();
+
+  // Close on outside click
+  useEffect(() => {
+    const handler = (e) => {
+      if (ref.current && !ref.current.contains(e.target)) setOpen(false);
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, []);
+
+  const handleLogout = () => {
+    setOpen(false);
+    logout();
+    navigate('/login');
+  };
+
+  // ✅ Priority: name → fullName → username → email prefix → 'User'
+  // This ensures "Rakhi" shows instead of "admin24"
+  const getDisplayName = (u) => {
+    if (!u) return 'User';
+    // Use proper name fields first
+    if (u.name && u.name.trim()) return u.name.trim();
+    if (u.fullName && u.fullName.trim()) return u.fullName.trim();
+    // Only fall back to username if no real name exists
+    if (u.username && u.username.trim()) return u.username.trim();
+    // Last resort: derive from email
+    if (u.email) return u.email.split('@')[0];
+    return 'User';
+  };
+
+  const displayName = getDisplayName(user);
+  const firstName   = displayName.split(' ')[0];
+  const initial     = firstName[0]?.toUpperCase() || 'U';
+
+  return (
+    <div className="relative" ref={ref}>
+
+      {/* ── "Hi, Rakhi ▾" button ── */}
+      <button
+        onClick={() => setOpen((prev) => !prev)}
+        className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg hover:bg-purple-600/10 transition-all duration-200 group"
+      >
+        <div className="w-7 h-7 rounded-full bg-purple-600/30 border border-purple-500/40 flex items-center justify-center text-purple-300 text-xs font-bold select-none">
+          {initial}
+        </div>
+        <span className="text-sm text-gray-300 group-hover:text-white transition-colors">
+          Hi,{''}<span className="text-purple-400 font-semibold">{firstName}</span>
+        </span>
+        <ChevronDown
+          size={14}
+          className={`text-gray-500 transition-transform duration-200 ${open ? 'rotate-180' : ''}`}
+        />
+      </button>
+
+      {/* ── Dropdown panel ── */}
+      {open && (
+        <div
+          className="absolute right-0 top-full mt-2 w-56 rounded-xl overflow-hidden shadow-2xl shadow-black/40 border border-purple-900/40 z-50"
+          style={{ background: '#1e1e38' }}
+        >
+          {/* User info */}
+          <div className="px-4 py-3 border-b border-white/[0.07] flex items-center gap-3">
+            <div className="w-9 h-9 rounded-full bg-purple-600/30 border border-purple-500/40 flex items-center justify-center text-purple-300 text-sm font-bold shrink-0">
+              {initial}
+            </div>
+            <div className="min-w-0">
+              <p className="text-white text-sm font-semibold truncate">{displayName}</p>
+              <p className="text-gray-500 text-xs truncate">{user?.email}</p>
+            </div>
+          </div>
+
+          {/* Links */}
+          <div className="py-1.5">
+            <Link
+              to="/profile"
+              onClick={() => setOpen(false)}
+              className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-300 hover:text-white hover:bg-purple-600/15 transition-all duration-150"
+            >
+              <User size={14} className="text-purple-400" />
+              My Profile
+            </Link>
+
+            {user?.role === 'admin' && (
+              <Link
+                to="/admin"
+                onClick={() => setOpen(false)}
+                className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-300 hover:text-white hover:bg-purple-600/15 transition-all duration-150"
+              >
+                <LayoutDashboard size={14} className="text-purple-400" />
+                Admin Panel
+              </Link>
+            )}
+          </div>
+
+          {/* Logout */}
+          <div className="border-t border-white/[0.07] py-1.5">
+            <button
+              onClick={handleLogout}
+              className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-red-400 hover:text-red-300 hover:bg-red-500/10 transition-all duration-150"
+            >
+              <LogOut size={14} />
+              Logout
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+/* ══════════════════════════════════════════
+   Main Navbar
+══════════════════════════════════════════ */
 const Navbar = () => {
   const { user, logout } = useAuth();
   const location = useLocation();
@@ -71,6 +174,16 @@ const Navbar = () => {
 
   const isActive = (path) =>
     path === '/' ? location.pathname === '/' : location.pathname.startsWith(path);
+
+  // ✅ Same name helper reused for mobile drawer
+  const getDisplayName = (u) => {
+    if (!u) return 'User';
+    if (u.name && u.name.trim()) return u.name.trim();
+    if (u.fullName && u.fullName.trim()) return u.fullName.trim();
+    if (u.username && u.username.trim()) return u.username.trim();
+    if (u.email) return u.email.split('@')[0];
+    return 'User';
+  };
 
   const Brand = ({ onClick }) => (
     <Link
@@ -96,7 +209,7 @@ const Navbar = () => {
 
             <Brand />
 
-            {/* Desktop nav */}
+            {/* ── Desktop nav ── */}
             <div className="hidden md:flex items-center space-x-1">
               {navLinks.map(({ to, label }) => (
                 <Link
@@ -112,30 +225,9 @@ const Navbar = () => {
                 </Link>
               ))}
 
+              {/* ✅ Show ProfileDropdown when logged in, else Login + Register */}
               {user ? (
-                <>
-                  <span className="text-gray-500 text-sm px-2">
-                    Hi, <span className="text-purple-400 font-semibold">{user.name}</span>
-                  </span>
-                  {user.role === 'admin' && (
-                    <Link
-                      to="/admin"
-                      className={`px-3 py-1.5 rounded-lg text-sm font-semibold transition-all duration-200 border ${
-                        isActive('/admin')
-                          ? 'text-purple-300 bg-purple-600/20 border-purple-500/70'
-                          : 'text-purple-400 border-purple-500/40 hover:text-purple-300 hover:border-purple-500/70'
-                      }`}
-                    >
-                      Admin Panel
-                    </Link>
-                  )}
-                  <button
-                    onClick={logout}
-                    className="bg-red-500/10 text-red-400 border border-red-500/30 hover:bg-red-500/20 hover:border-red-500/60 px-3 py-1.5 rounded-lg text-sm font-semibold transition-all duration-200"
-                  >
-                    Logout
-                  </button>
-                </>
+                <ProfileDropdown user={user} logout={logout} />
               ) : (
                 <>
                   <Link
@@ -195,11 +287,16 @@ const Navbar = () => {
           </button>
         </div>
 
-        {/* User greeting */}
+        {/* ✅ Mobile — user info card using getDisplayName */}
         {user && (
-          <div className="px-5 py-4 border-b border-purple-900/20">
-            <p className="text-gray-500 text-xs uppercase tracking-wider mb-0.5">Signed in as</p>
-            <p className="text-purple-400 font-semibold">{user.name}</p>
+          <div className="px-5 py-4 border-b border-purple-900/20 flex items-center gap-3">
+            <div className="w-9 h-9 rounded-full bg-purple-600/30 border border-purple-500/40 flex items-center justify-center text-purple-300 text-sm font-bold shrink-0">
+              {getDisplayName(user)[0]?.toUpperCase()}
+            </div>
+            <div className="min-w-0">
+              <p className="text-white text-sm font-semibold truncate">{getDisplayName(user)}</p>
+              <p className="text-gray-500 text-xs truncate">{user?.email}</p>
+            </div>
           </div>
         )}
 
@@ -222,23 +319,46 @@ const Navbar = () => {
 
           {user ? (
             <>
+              {/* ✅ My Profile in mobile drawer */}
+              <Link
+                to="/profile"
+                onClick={() => setMenuOpen(false)}
+                className={`flex items-center justify-between px-4 py-3 rounded-xl text-sm font-medium transition-all duration-200 ${
+                  isActive('/profile')
+                    ? 'text-white bg-purple-600/20 border border-purple-500/40'
+                    : 'text-gray-400 hover:text-white hover:bg-purple-600/10'
+                }`}
+              >
+                <span className="flex items-center gap-2">
+                  <User size={14} className="text-purple-400" />
+                  My Profile
+                </span>
+                <ChevronRight size={15} className="opacity-40" />
+              </Link>
+
               {user.role === 'admin' && (
                 <Link
                   to="/admin"
+                  onClick={() => setMenuOpen(false)}
                   className={`flex items-center justify-between px-4 py-3 rounded-xl text-sm font-semibold transition-all border ${
                     isActive('/admin')
                       ? 'text-purple-300 bg-purple-600/20 border-purple-500/70'
                       : 'text-purple-400 border-purple-500/30 hover:bg-purple-600/10'
                   }`}
                 >
-                  Admin Panel
+                  <span className="flex items-center gap-2">
+                    <LayoutDashboard size={14} />
+                    Admin Panel
+                  </span>
                   <ChevronRight size={15} className="opacity-40" />
                 </Link>
               )}
+
               <button
                 onClick={() => { logout(); setMenuOpen(false); }}
-                className="mt-2 w-full text-left px-4 py-3 rounded-xl text-sm font-semibold bg-red-500/10 text-red-400 border border-red-500/30 hover:bg-red-500/20 transition-all"
+                className="mt-2 w-full flex items-center gap-2 px-4 py-3 rounded-xl text-sm font-semibold bg-red-500/10 text-red-400 border border-red-500/30 hover:bg-red-500/20 transition-all"
               >
+                <LogOut size={14} />
                 Logout
               </button>
             </>
